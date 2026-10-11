@@ -1,0 +1,13 @@
+# Field activity update
+
+The existing portal now includes visible foreground workday tracking: Start / resume, Pause and End workday. GPS fixes include coordinates, device accuracy and capture time. Points upload through the existing ownership-protected location API with UUID retry protection. Failed uploads remain in a per-account device queue (up to 5,000 points); ending is blocked until uploads finish. Tracking requires explicit browser permission. HTTPS is required outside localhost. Browser closure, suspension, device permission or unavailable GPS can interrupt tracking; this is not guaranteed background surveillance.
+
+Arrival capture retries with a lower-accuracy location provider after a timeout/unavailable high-accuracy fix. Errors explain permission, device location and secure-context problems. Actual device GPS must still be checked on the deployed HTTPS site.
+
+Admin → Activity filters newly submitted orders, payments and clients, plus workdays, client visits, daily reports, itinerary plans and expense requests by salesperson and Nairobi date. Routes display a coordinate sketch and timestamp/accuracy table, fetched 500 points at a time. The sketch is not a street map. Planning retains the full team view, including future-dated requests, with approval/rejection controls. Reports, visits, plans, expenses, orders and client lists show the responsible salesperson; client details show the assignment too.
+
+New follow-up dates belong to Daily work report. Migration `2026_10_11_000003_report_followups` adds a nullable report field without changing historic visit dates. The legacy visit API still accepts its existing follow-up field for compatibility.
+
+Run `php artisan migrate --force` on other environments, then `php artisan view:clear`. No frontend build is required. Reload the portal to obtain the new JavaScript. Use a location-capable browser, allow location permission, enable device location and start tracking. Admin can select a salesperson and date in Activity and refresh to retrieve newly submitted records. Staff tracking pauses on page navigation/reload; resume explicitly on return.
+
+Validation: `php tests/activity-workflows.php` uses rolled-back PostgreSQL fixtures for workday reuse, GPS idempotency, ownership boundaries, admin route visibility, report follow-ups and approval. `node tests/location-ui.cjs` simulates geolocation fallback, tracking uploads, offline retention, reconnect retry, workday ending and route display. `npm run test:ui` checks both themes/languages (97 DOM checks including Activity). These are automated simulations, not physical-device GPS or visual mobile QA.

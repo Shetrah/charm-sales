@@ -1,0 +1,386 @@
+[
+  {
+    "id": 1,
+    "category": "Handwash",
+    "capacity": "500ml",
+    "fragrance": "Ylang-Ylang",
+    "barcode": "0721688311874",
+    "carton": 20
+  },
+  {
+    "id": 2,
+    "category": "Handwash",
+    "capacity": "500ml",
+    "fragrance": "Azure Breeze",
+    "barcode": "0724133585417",
+    "carton": 20
+  },
+  {
+    "id": 3,
+    "category": "Handwash",
+    "capacity": "500ml",
+    "fragrance": "Peninsula Dew",
+    "barcode": "0724133585424",
+    "carton": 20
+  },
+  {
+    "id": 4,
+    "category": "Handwash",
+    "capacity": "500ml",
+    "fragrance": "Rose Scent",
+    "barcode": "0724133585431",
+    "carton": 20
+  },
+  {
+    "id": 5,
+    "category": "Handwash",
+    "capacity": "5L",
+    "fragrance": "Ylang-Ylang",
+    "barcode": "0724133585615",
+    "carton": 4
+  },
+  {
+    "id": 6,
+    "category": "Handwash",
+    "capacity": "5L",
+    "fragrance": "Azure Breeze",
+    "barcode": "0724133585608",
+    "carton": 4
+  },
+  {
+    "id": 7,
+    "category": "Handwash",
+    "capacity": "5L",
+    "fragrance": "Peninsula Dew",
+    "barcode": "0724133585653",
+    "carton": 4
+  },
+  {
+    "id": 8,
+    "category": "Handwash",
+    "capacity": "5L",
+    "fragrance": "Rose Scent",
+    "barcode": "0724133585530",
+    "carton": 4
+  },
+  {
+    "id": 9,
+    "category": "Shampoo",
+    "capacity": "200ml",
+    "fragrance": "Silent Aroma",
+    "barcode": "0745760226535",
+    "carton": 36
+  },
+  {
+    "id": 10,
+    "category": "Shampoo",
+    "capacity": "200ml",
+    "fragrance": "Amber Bomb",
+    "barcode": "0745760226511",
+    "carton": 36
+  },
+  {
+    "id": 11,
+    "category": "Shampoo",
+    "capacity": "200ml",
+    "fragrance": "Neon Dream",
+    "barcode": "0745760226528",
+    "carton": 36
+  },
+  {
+    "id": 12,
+    "category": "Shampoo",
+    "capacity": "750ml",
+    "fragrance": "Silent Aroma",
+    "barcode": "0721688311850",
+    "carton": 12
+  },
+  {
+    "id": 13,
+    "category": "Shampoo",
+    "capacity": "750ml",
+    "fragrance": "Amber Bomb",
+    "barcode": "0724133585455",
+    "carton": 12
+  },
+  {
+    "id": 14,
+    "category": "Shampoo",
+    "capacity": "750ml",
+    "fragrance": "Neon Dream",
+    "barcode": "0724133585462",
+    "carton": 12
+  },
+  {
+    "id": 15,
+    "category": "Shampoo",
+    "capacity": "5L",
+    "fragrance": "Silent Aroma",
+    "barcode": "0724133585684",
+    "carton": 4
+  },
+  {
+    "id": 16,
+    "category": "Shampoo",
+    "capacity": "5L",
+    "fragrance": "Amber Bomb",
+    "barcode": "0724133585677",
+    "carton": 4
+  },
+  {
+    "id": 17,
+    "category": "Shampoo",
+    "capacity": "5L",
+    "fragrance": "Neon Dream",
+    "barcode": "0724133585622",
+    "carton": 4
+  },
+  {
+    "id": 18,
+    "category": "Shower Gel",
+    "capacity": "200ml",
+    "fragrance": "Pheromone",
+    "barcode": "0745760226559",
+    "carton": 36
+  },
+  {
+    "id": 19,
+    "category": "Shower Gel",
+    "capacity": "200ml",
+    "fragrance": "Heartbeat Whisper",
+    "barcode": "0745760226504",
+    "carton": 36
+  },
+  {
+    "id": 20,
+    "category": "Shower Gel",
+    "capacity": "200ml",
+    "fragrance": "Milan Fogland",
+    "barcode": "0745760226559",
+    "carton": 36
+  },
+  {
+    "id": 21,
+    "category": "Shower Gel",
+    "capacity": "200ml",
+    "fragrance": "Silent Aroma",
+    "barcode": "0745760226542",
+    "carton": 36
+  },
+  {
+    "id": 22,
+    "category": "Shower Gel",
+    "capacity": "750ml",
+    "fragrance": "Pheromone",
+    "barcode": "0721688311843",
+    "carton": 12
+  },
+  {
+    "id": 23,
+    "category": "Shower Gel",
+    "capacity": "750ml",
+    "fragrance": "Heartbeat Whisper",
+    "barcode": "0724133585479",
+    "carton": 12
+  },
+  {
+    "id": 24,
+    "category": "Shower Gel",
+    "capacity": "751ml",
+    "fragrance": "Milan Fogland",
+    "barcode": "0724133585554",
+    "carton": 12
+  },
+  {
+    "id": 25,
+    "category": "Shower Gel",
+    "capacity": "750ml",
+    "fragrance": "Silent Aroma",
+    "barcode": "0724133585486",
+    "carton": 12
+  },
+  {
+    "id": 26,
+    "category": "Shower Gel",
+    "capacity": "5L",
+    "fragrance": "Pheromone",
+    "barcode": "0724133585639",
+    "carton": 4
+  },
+  {
+    "id": 27,
+    "category": "Shower Gel",
+    "capacity": "5L",
+    "fragrance": "Heartbeat Whisper",
+    "barcode": "0724133585509",
+    "carton": 4
+  },
+  {
+    "id": 28,
+    "category": "Shower Gel",
+    "capacity": "5L",
+    "fragrance": "Milan Fogland",
+    "barcode": "0724133585646",
+    "carton": 4
+  },
+  {
+    "id": 29,
+    "category": "Shower Gel",
+    "capacity": "5L",
+    "fragrance": "Silent Aroma",
+    "barcode": "0724133585523",
+    "carton": 4
+  },
+  {
+    "id": 30,
+    "category": "Laundry Detergent",
+    "capacity": "750ml",
+    "fragrance": "Fragrant Ylang-Ylang",
+    "barcode": "0745760226573",
+    "carton": 24
+  },
+  {
+    "id": 31,
+    "category": "Laundry Detergent",
+    "capacity": "750ml",
+    "fragrance": "Rose",
+    "barcode": "0725765720740",
+    "carton": 24
+  },
+  {
+    "id": 32,
+    "category": "Laundry Detergent",
+    "capacity": "1500ml",
+    "fragrance": "Fragrant Ylang-Ylang",
+    "barcode": "0721688311829",
+    "carton": 12
+  },
+  {
+    "id": 33,
+    "category": "Laundry Detergent",
+    "capacity": "1500ml",
+    "fragrance": "Rose",
+    "barcode": "0724133585448",
+    "carton": 12
+  },
+  {
+    "id": 34,
+    "category": "Laundry Detergent",
+    "capacity": "5L",
+    "fragrance": "Fragrant Ylang-Ylang",
+    "barcode": "0724133585493",
+    "carton": 4
+  },
+  {
+    "id": 35,
+    "category": "Laundry Detergent",
+    "capacity": "5L",
+    "fragrance": "Rose",
+    "barcode": "0724133585516",
+    "carton": 4
+  },
+  {
+    "id": 36,
+    "category": "Dish Washing Liquid",
+    "capacity": "500ml",
+    "fragrance": "Lemon",
+    "barcode": "0745760226566",
+    "carton": 24
+  },
+  {
+    "id": 37,
+    "category": "Dish Washing Liquid",
+    "capacity": "500ml",
+    "fragrance": "Ginger",
+    "barcode": "0745760226580",
+    "carton": 24
+  },
+  {
+    "id": 38,
+    "category": "Dish Washing Liquid",
+    "capacity": "1500ml",
+    "fragrance": "Lemon",
+    "barcode": "0721688311836",
+    "carton": 12
+  },
+  {
+    "id": 39,
+    "category": "Dish Washing Liquid",
+    "capacity": "1500ml",
+    "fragrance": "Ginger",
+    "barcode": "0724133585400",
+    "carton": 12
+  },
+  {
+    "id": 40,
+    "category": "Dish Washing Liquid",
+    "capacity": "5L",
+    "fragrance": "Lemon",
+    "barcode": "0724133585592",
+    "carton": 4
+  },
+  {
+    "id": 41,
+    "category": "Dish Washing Liquid",
+    "capacity": "5L",
+    "fragrance": "Ginger",
+    "barcode": "0724133585660",
+    "carton": 4
+  },
+  {
+    "id": 42,
+    "category": "Windshield & Glass Cleaner",
+    "capacity": "1600ml",
+    "fragrance": "Orange",
+    "barcode": "0745760226597",
+    "carton": 12
+  },
+  {
+    "id": 43,
+    "category": "Windshield & Glass Cleaner",
+    "capacity": "2000ml",
+    "fragrance": "Orange",
+    "barcode": "0721688311867",
+    "carton": 6
+  },
+  {
+    "id": 44,
+    "category": "Windshield & Glass Cleaner",
+    "capacity": "5L",
+    "fragrance": "Orange",
+    "barcode": "0724133585585",
+    "carton": 4
+  },
+  {
+    "id": 45,
+    "category": "Automotive Interior Cleaner",
+    "capacity": "950ml",
+    "fragrance": "Rome",
+    "barcode": "0721688311812",
+    "carton": 12
+  },
+  {
+    "id": 46,
+    "category": "Automotive Interior Cleaner",
+    "capacity": "5L",
+    "fragrance": "Rome",
+    "barcode": "0724133585578",
+    "carton": 4
+  },
+  {
+    "id": 47,
+    "category": "Tire Shine",
+    "capacity": "950ml",
+    "fragrance": "None",
+    "barcode": "0721688311805",
+    "carton": 12
+  },
+  {
+    "id": 48,
+    "category": "Tire Shine",
+    "capacity": "5L",
+    "fragrance": "None",
+    "barcode": "0724133585561",
+    "carton": 4
+  }
+]

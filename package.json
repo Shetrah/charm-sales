@@ -1,0 +1,6 @@
+{
+ "name":"charm-sales-workspace",
+ "private":true,
+ "scripts":{"test:ui":"node tests/workspace-ui.cjs"},
+ "devDependencies":{"jsdom":"26.1.0"}
+}

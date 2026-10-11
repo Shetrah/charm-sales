@@ -1,0 +1,21 @@
+<?php
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\PortalController as P;
+Route::post('/clients',[P::class,'addClient']);
+Route::post('/orders',[P::class,'addOrder']);
+Route::post('/orders/{id}/confirm',[P::class,'confirm'])->whereNumber('id');
+Route::post('/orders/{id}/reject',[P::class,'rejectOrder'])->whereNumber('id');
+Route::post('/payments',[P::class,'addPayment']);
+Route::post('/payments/{id}/verify',[P::class,'verify'])->whereNumber('id');
+Route::post('/records/{kind}',[P::class,'record'])->whereIn('kind',['plans','expenses','reports']);
+Route::post('/records/{kind}/{id}/review',[P::class,'review'])->whereIn('kind',['plans','expenses','reports'])->whereNumber('id');
+Route::get('/workdays/current',[P::class,'currentWorkday']);
+Route::post('/workdays',[P::class,'workday']);
+Route::post('/workdays/{id}/end',[P::class,'endWorkday'])->whereNumber('id');
+Route::post('/workdays/{id}/locations',[P::class,'locations'])->whereNumber('id');
+Route::get('/workdays/{id}/route',[P::class,'route'])->whereNumber('id');
+Route::post('/visits',[P::class,'visit']);
+Route::post('/users',[P::class,'addUser']);
+Route::post('/products/{id}/pricing',[P::class,'pricing'])->whereNumber('id');
+Route::post('/uploads/{kind}/{id}',[App\Http\Controllers\UploadController::class,'store'])->whereIn('kind',['visits','payments'])->whereNumber('id');
+Route::get('/uploads/{kind}/{id}',[App\Http\Controllers\UploadController::class,'download'])->whereIn('kind',['visits','payments'])->whereNumber('id');
