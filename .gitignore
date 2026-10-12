@@ -1,4 +1,11 @@
 .env
+.env.local
+.env.*.local
+/dist/
+/test-results/
+/playwright-report/
+/supabase/.temp/
+*.tsbuildinfo
 /vendor/
 /node_modules/
 /storage/logs/*
