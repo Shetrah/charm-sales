@@ -10,7 +10,7 @@ grant usage on schema auth to authenticated;grant execute on function auth.uid()
 create schema storage;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
 create table storage.objects(id uuid default gen_random_uuid(),bucket_id text,name text,unique(bucket_id,name));alter table storage.objects enable row level security;`);
 for(const file of readdirSync('supabase/migrations').sort())await db.exec(readFileSync(`supabase/migrations/${file}`,'utf8'));
-const accounts=[{id:'00000000-0000-4000-8000-000000000001',email:'admin@test.invalid',name:'Test Admin',role:'admin'},{id:'00000000-0000-4000-8000-000000000002',email:'sales@test.invalid',name:'Test Salesperson',role:'salesperson'}];
+const accounts=[{id:'00000000-0000-4000-8000-000000000001',email:'admin@test.invalid',name:'Test Admin',role:'admin'},{id:'00000000-0000-4000-8000-000000000002',email:'sales@test.invalid',name:'Test Salesperson',role:'salesperson'},{id:'00000000-0000-4000-8000-000000000003',email:'removable@test.invalid',name:'Test Removable',role:'salesperson'}];
 for(const [i,u] of accounts.entries()){
  await db.query('insert into auth.users values($1,$2)',[u.id,u.email]);
  await db.query('insert into charm.users(id,name,email,password,role) values($1,$2,$3,\'test-only\',$4)',[i+1,u.name,u.email,u.role]);
@@ -41,7 +41,7 @@ createServer((req,res)=>{queue=queue.then(async()=>{
    const sql=`select charm.${fn}(${keys.map((k,i)=>`${k} => $${i+1}`).join(',')}) as result`;
    const data=await db.query(sql,params);send(200,data.rows[0].result);return;
   }
-  const table=url.pathname.split('/').pop();if(!['users','clients','products','orders','order_items','payments','order_balances','visits','plans','expenses','reports','workdays','location_points','audit_logs'].includes(table))throw Error('invalid');
+  const table=url.pathname.split('/').pop();if(!['users','team_directory','clients','products','orders','order_items','payments','order_balances','visits','plans','expenses','reports','workdays','location_points','audit_logs'].includes(table))throw Error('invalid');
   const columns=url.searchParams.get('select')??'*';if(!/^[a-z_,*]+$/.test(columns))throw Error('invalid');
   const params=[],conditions=[];
   for(const [k,v] of url.searchParams.entries())if(!['select','order','offset','limit','or'].includes(k)){

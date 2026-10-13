@@ -22,7 +22,7 @@ test('connected workspace, every direct route, translated tables and mobile navi
 });
 test('team cards, complete staff profile and secure editing work on every screen size',async({page})=>{
  await page.goto('/staff');await page.getByLabel('Email address').fill('admin@test.invalid');await page.getByLabel('Password',{exact:true}).fill('test-password-123');await page.getByRole('button',{name:'Sign in',exact:true}).click();
- await page.goto('/staff');await expect(page.locator('.person-card')).toHaveCount(2);
+ await page.goto('/staff');await expect(page.locator('.person-card').filter({hasText:'Test Salesperson'})).toHaveCount(1);
  await page.locator('.person-card').filter({hasText:'Test Salesperson'}).getByRole('button',{name:'View details',exact:true}).click();
  await expect(page.getByRole('dialog')).toBeVisible();await expect(page.getByText('All-time confirmed sales',{exact:true})).toBeVisible();
  await page.getByRole('button',{name:'Edit staff information',exact:true}).last().click();
@@ -36,6 +36,14 @@ test('team cards, complete staff profile and secure editing work on every screen
 });
 test.describe('desktop transaction and field workflows',()=>{
  test.skip(({isMobile})=>isMobile,'Desktop transaction coverage; responsive views are tested separately.');
+test('admin can deactivate, reactivate and delete staff through confirmed controls',async({page})=>{
+ await page.goto('/staff');await page.getByLabel('Email address').fill('admin@test.invalid');await page.getByLabel('Password',{exact:true}).fill('test-password-123');await page.getByRole('button',{name:'Sign in',exact:true}).click();await page.goto('/staff');
+ await page.locator('.person-card').filter({hasText:'Test Removable'}).getByRole('button',{name:'View details',exact:true}).click();
+ const dialog=page.getByRole('dialog');await dialog.getByRole('button',{name:'Make inactive',exact:true}).click();await dialog.getByRole('button',{name:'Make inactive',exact:true}).click();await expect(dialog.locator('.profile-badges')).toContainText('Inactive');
+ await dialog.getByRole('button',{name:'Reactivate staff',exact:true}).click();await dialog.getByRole('button',{name:'Reactivate staff',exact:true}).click();await expect(dialog.locator('.profile-badges')).toContainText('Active');
+ await dialog.getByRole('button',{name:'Delete staff',exact:true}).click();await expect(dialog).toContainText('Their staff ID, clients, orders, payments and audit history are preserved.');await dialog.getByRole('button',{name:'Cancel',exact:true}).click();
+ await dialog.getByRole('button',{name:'Delete staff',exact:true}).click();await dialog.getByRole('button',{name:'Delete staff',exact:true}).click();await expect(page.locator('dialog')).toHaveCount(0);await expect(page.locator('.person-card').filter({hasText:'Test Removable'})).toHaveCount(0);
+});
 test('an already-open admin page receives a new salesperson submission without a reload',async({page,browser})=>{
  await page.goto('/orders');await page.getByLabel('Email address').fill('admin@test.invalid');await page.getByLabel('Password',{exact:true}).fill('test-password-123');await page.getByRole('button',{name:'Sign in',exact:true}).click();await page.goto('/orders');await expect(page.locator('main h1')).toHaveText('Orders');
  const context=await browser.newContext();try{

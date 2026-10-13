@@ -152,6 +152,31 @@ describe.sequential('Supabase PostgreSQL migration and permissions',()=>{
   expect(await scalar('select latitude from charm.clients where id=1')).toBe('-1.2000000');
   await expect(db.query('select charm.set_client_location(1,999,36.8,12)')).rejects.toThrow('invalidLocation');
  });
+ it('only admins can manage staff and nobody can deactivate or delete their own account',async()=>{
+  await asUser(a);await expect(db.query("select charm.manage_staff(3,'delete')")).rejects.toThrow('forbidden');
+  await asUser(admin);await expect(db.query("select charm.manage_staff(1,'delete')")).rejects.toThrow('cannotManageSelf');
+  await expect(db.query("select charm.manage_staff(1,'deactivate')")).rejects.toThrow('cannotManageSelf');
+  await expect(db.query("select charm.manage_staff(2,'anything')")).rejects.toThrow('invalid');
+ });
+ it('deactivates and reactivates staff without changing ownership or financial history',async()=>{
+  await asUser(admin);await db.query("select charm.manage_staff(2,'deactivate')");
+  expect(await scalar('select active from charm.team_directory where id=2')).toBe(false);
+  expect((await scalar("select charm.staff_profile(2,'2026-11-01')")).lifetime_sales).toBe('49.30');
+  await asUser(a);expect(await scalar('select charm.actor()')).toBe(null);await expect(db.query('select charm.start_workday()')).rejects.toThrow('unauthorized');
+  await asUser(admin);await db.query("select charm.manage_staff(2,'reactivate')");await asUser(a);expect(await scalar('select charm.actor()')).toBe(2);
+ });
+ it('deletes staff from the directory while retaining every historical record and blocking reactivation',async()=>{
+  await asUser(admin);await db.query("select charm.manage_staff(2,'delete')");await db.query("select charm.manage_staff(2,'delete')");
+  expect(await scalar('select count(*)::int from charm.team_directory where id=2')).toBe(0);
+  expect(await scalar('select count(*)::int from charm.users where id=2')).toBe(1);
+  expect(await scalar('select salesperson_id from charm.clients where id=1')).toBe(2);
+  expect(await scalar('select salesperson_id from charm.orders where id=$1',[order])).toBe(2);
+  const profile=await scalar("select charm.staff_profile(2,'2026-11-01')");expect(profile.lifetime_sales).toBe('49.30');expect(profile.outstanding).toBe('39.30');
+  expect(await scalar("select count(*)::int from charm.audit_logs where action='staffDeleted' and entity_id=2")).toBe(1);
+  await expect(db.query("select charm.manage_staff(2,'reactivate')")).rejects.toThrow('staffDeleted');
+  await expect(db.query("select charm.update_staff(2,'Resurrect',null,null,'salesperson',true)")).rejects.toThrow('staffDeleted');
+  await asUser(a);expect(await scalar('select charm.actor()')).toBe(null);expect(await scalar('select count(*)::int from charm.orders')).toBe(0);
+ });
 });
 describe('frontend financial and localization contracts',()=>{
  it('uses exact cents without multiplying carton size',()=>{expect(cents('12.35')).toBe(1235n);expect(lineTotal('12.35',2)).toBe('24.70');expect(lineTotal('8.20',3)).toBe('24.60');expect(()=>cents('1.001')).toThrow();});
