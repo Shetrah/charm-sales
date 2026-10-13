@@ -5,8 +5,8 @@ schemas = ["public", "graphql_public", "charm"]
 extra_search_path = ["public", "extensions"]
 [auth]
 site_url = "http://localhost:5173"
-additional_redirect_urls = ["http://localhost:5173/auth/callback", "http://127.0.0.1:5173/auth/callback", "https://sales.charmkenya.com/auth/callback"]
+additional_redirect_urls = ["http://localhost:5173/auth/callback", "http://127.0.0.1:5173/auth/callback", "https://sales.charmkenya.com/auth/callback", "https://charm-sales.vercel.app/auth/callback"]
 enable_signup = false
-[functions.invite-staff]
+[functions.add-staff]
 # The function validates bearer tokens with Auth getUser and database roles.
 verify_jwt = false

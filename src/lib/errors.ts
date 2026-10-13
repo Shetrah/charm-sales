@@ -1,4 +1,5 @@
 export function databaseError(error: { code?: string; message: string }): Error {
+  if(error.code==='23505')return new Error('duplicateFinancialRecord');
   if (error.code === 'PGRST106') return new Error('schemaNotExposed');
   if (error.code === 'PGRST202') return new Error('migrationMissing');
   return new Error(error.message);

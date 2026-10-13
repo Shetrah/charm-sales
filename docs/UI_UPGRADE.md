@@ -37,3 +37,7 @@ npm run build
 ```
 
 The browser command builds a separate test-only production artifact in `tests/.artifacts/browser-dist`, using synthetic public test configuration, then serves it on port 5174. It leaves your existing dev server on port 5173 and the normal `dist` build untouched. Tests use one worker to reduce Windows memory pressure. SQL tests use actual isolated PostgreSQL/RLS and never connect to the configured hosted database. The Supabase email/Storage/Realtime services and physical phone GPS still require hosted/device checks. All new interface text supports English and Simplified Chinese; motion is suppressed under reduced-motion preferences.
+
+## Staff lifecycle and finance extension
+
+Migration 009 adds confirmed admin deactivation/reactivation and directory removal, preserving staff IDs, clients, sales, financial balances and audit history. Removed accounts cannot be resurrected through ordinary profile editing. Finance migrations 010–021 consolidate finance duties into Finance Officer alongside Admin and Salesperson; deploy the new `add-staff` Edge Function for temporary-password onboarding. See [Finance Portal setup and controls](FINANCE_PORTAL.md).

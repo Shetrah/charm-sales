@@ -2,7 +2,7 @@ import {test,expect} from '@playwright/test';
 test('connected workspace, every direct route, translated tables and mobile navigation',async({page})=>{
  await page.goto('/');
  await page.getByLabel('Email address').fill('admin@test.invalid');await page.getByLabel('Password',{exact:true}).fill('test-password-123');await page.getByRole('button',{name:'Sign in',exact:true}).click();
- await expect(page.getByRole('heading',{name:'Overview',exact:true})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'Admin portal',exact:true,level:1})).toBeVisible();await page.goto('/dashboard');await expect(page.getByRole('heading',{name:'Overview',exact:true})).toBeVisible();
  await expect(page.locator('.team-ranking').getByText('Test Salesperson',{exact:true})).toBeVisible();
  for(const route of ['clients','products','orders','payments','balances','visits','plans','expenses','reports','routes','staff','audit']){
   await page.goto('/'+route);await expect(page.locator('main h1')).toBeVisible();await expect(page.getByRole('alert')).toHaveCount(0);
@@ -37,7 +37,7 @@ test('team cards, complete staff profile and secure editing work on every screen
 test.describe('desktop transaction and field workflows',()=>{
  test.skip(({isMobile})=>isMobile,'Desktop transaction coverage; responsive views are tested separately.');
 test('admin can deactivate, reactivate and delete staff through confirmed controls',async({page})=>{
- await page.goto('/staff');await page.getByLabel('Email address').fill('admin@test.invalid');await page.getByLabel('Password',{exact:true}).fill('test-password-123');await page.getByRole('button',{name:'Sign in',exact:true}).click();await page.goto('/staff');
+ await page.goto('/staff');await page.getByLabel('Email address').fill('admin@test.invalid');await page.getByLabel('Password',{exact:true}).fill('test-password-123');await page.getByRole('button',{name:'Sign in',exact:true}).click();await expect(page.locator('.sidebar-footer')).toBeVisible();await page.goto('/staff');
  await page.locator('.person-card').filter({hasText:'Test Removable'}).getByRole('button',{name:'View details',exact:true}).click();
  const dialog=page.getByRole('dialog');await dialog.getByRole('button',{name:'Make inactive',exact:true}).click();await dialog.getByRole('button',{name:'Make inactive',exact:true}).click();await expect(dialog.locator('.profile-badges')).toContainText('Inactive');
  await dialog.getByRole('button',{name:'Reactivate staff',exact:true}).click();await dialog.getByRole('button',{name:'Reactivate staff',exact:true}).click();await expect(dialog.locator('.profile-badges')).toContainText('Active');

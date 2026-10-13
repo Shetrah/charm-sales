@@ -1,9 +1,0 @@
-<?php
-require __DIR__.'/../vendor/autoload.php';$app=require __DIR__.'/../bootstrap/app.php';$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
-config(['session.driver'=>'array']);$user=App\Models\User::where('role','admin')->where('active',true)->firstOrFail();
-Illuminate\Support\Facades\Auth::guard('web')->setUser($user);$kernel=$app->make(Illuminate\Contracts\Http\Kernel::class);
-foreach(['/','/profile','/workspace/summary?month=2026-10','/workspace/records/orders?q=CH-1','/workspace/records/clients?q=QA','/workspace/records/workdays?q=2026-10','/workspace/records/users','/api/snapshot?month=2026-10&per_page=2'] as $url){$r=Illuminate\Http\Request::create('http://127.0.0.1:8000'.$url);if(str_contains($url,'workspace')||str_contains($url,'/api/'))$r->headers->set('Accept','application/json');$response=$kernel->handle($r);if($response->getStatusCode()!==200)throw new RuntimeException($url.' returned '.$response->getStatusCode());if(!str_contains($response->headers->get('Cache-Control'),'no-store'))throw new RuntimeException('Private response cache policy missing');if(str_contains($url,'snapshot')){$data=json_decode($response->getContent(),true);foreach(['clients','orders','payments','balances','monthly','team'] as $key){if(count($data[$key])>2||!isset($data['pagination'][$key]))throw new RuntimeException('Snapshot pagination missing for '.$key);}}echo "PASS: $url HTTP 200, private/no-store\n";}
-// Run using the same middleware and authentication boundary as the live web server.
-Illuminate\Support\Facades\Auth::forgetGuards();Illuminate\Support\Facades\Auth::shouldUse('web');
-$r=Illuminate\Http\Request::create('http://127.0.0.1:8000/workspace/records/users');$r->headers->set('Accept','application/json');$response=$kernel->handle($r);
-if($response->getStatusCode()!==401)throw new RuntimeException('Unauthenticated private request was not rejected');echo "PASS: unauthenticated records request rejected (401)\n";
