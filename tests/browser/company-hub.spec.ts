@@ -10,7 +10,7 @@ test('each role reaches its portal and only Admin can choose every portal',async
  await login(page,'admin@test.invalid');await expect(page).toHaveURL(/\/admin$/);await expect(page.locator('.portal-grid a')).toHaveCount(3);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  await page.screenshot({path:`tests/.artifacts/company-hub-${test.info().project.name}.png`,fullPage:true});
- await page.getByRole('link',{name:'Finance portal',exact:true}).click();await expect(page.locator('main h1')).toHaveText('Finance portal');
+ await page.getByRole('link',{name:'Finance portal',exact:true}).click();await expect(page.locator('main h1')).toHaveText('Finance dashboard');
  await page.goto('/admin');await expect(page.locator('main h1')).toHaveText('Admin portal');
  await logout(page);await login(page,'officer@test.invalid');await expect(page).toHaveURL(/\/finance$/);
  await page.goto('/staff');await expect(page).toHaveURL(/\/finance$/);await page.goto('/sales');await expect(page).toHaveURL(/\/finance$/);

@@ -49,6 +49,10 @@ describe.sequential('Integrated finance controls in PostgreSQL',()=>{
   await db.query("select charm.finance_review_request($1,'approved',null,'5.00')",[second]);
   await user(5);await expect(db.query("select charm.finance_configure($1,'budget',$2)",[key(),JSON.stringify({category_id:1,month,amount:'10.00'})])).rejects.toThrow('budgetExceeded');
  });
+ it('routes only approved or partial requests to disbursement and keeps outstanding queues all-time and scoped',async()=>{
+  await user(4);const queue=await scalar("select charm.finance_register('requests',$1,$2,'awaiting_payment',null,1)",[date,due]);expect(queue.total).toBe(2);expect(queue.rows.map((row:any)=>row.id).sort()).toEqual([request,second].sort());expect(queue.rows.every((row:any)=>['approved','part_paid'].includes(row.status))).toBe(true);
+  await user(6);const own=await scalar("select charm.finance_register('requests',$1,$2,'awaiting_payment',null,1)",[date,due]);expect(own.total).toBe(0);
+ });
  it('requires evidence and confirmation, supports partial payments and rejects conflicting retries',async()=>{
   await user(4);paidAt=await scalar('select now()::text');firstProof=await proof(request,'payment',4);disbursementKey=key();
   await expect(db.query("select charm.finance_disburse($1,$2,$3,'30.10','PART-1',$4,$5,false)",[key(),request,account,paidAt,firstProof])).rejects.toThrow('paymentConfirmationRequired');
@@ -59,6 +63,11 @@ describe.sequential('Integrated finance controls in PostgreSQL',()=>{
   const p2=await proof(request,'payment',4);await expect(db.query("select charm.finance_disburse($1,$2,$3,'61.00','OVER',now(),$4,true)",[key(),request,account,p2])).rejects.toThrow('overpayment');
   await db.query("select charm.finance_disburse($1,$2,$3,'60.10','PART-2',now(),$4,true)",[key(),request,account,p2]);
   expect((await scalar('select charm.finance_detail($1)',[request])).request.paid).toBe('90.20');expect((await scalar('select charm.finance_detail($1)',[request])).request.status).toBe('paid');
+ });
+ it('outstanding drilldown includes older balances and payment queues move immediately after confirmation',async()=>{
+  await user(4);const waiting=await scalar("select charm.finance_register('requests',$1,$2,'awaiting_payment',null,1)",[date,due]);expect(waiting.total).toBe(1);expect(waiting.rows[0].id).toBe(second);
+  const old=await scalar("select charm.finance_register('requests','2020-01-01','2020-01-31','outstanding',null,1)");expect(old.rows.some((row:any)=>row.id===request&&row.outstanding==='90.20')).toBe(true);
+  await user(6);expect((await scalar("select charm.finance_register('requests','2020-01-01','2020-01-31','outstanding',null,1)")).total).toBe(0);
  });
  it('blocks another outstanding advance and records durable, recipient-scoped notifications',async()=>{
   await user(4);const doc=await proof(second,'payment',4);await expect(db.query("select charm.finance_disburse($1,$2,$3,'5.00','NEXT',now(),$4,true)",[key(),second,account,doc])).rejects.toThrow('advanceOutstanding');
