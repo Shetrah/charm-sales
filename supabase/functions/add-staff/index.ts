@@ -1,10 +1,11 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
-const allowed=(Deno.env.get('ALLOWED_ORIGINS')??'http://localhost:5173,http://127.0.0.1:5173,https://charm-sales.vercel.app,https://sales.charmkenya.com').split(',').map(s=>s.trim());
+const allowed=(Deno.env.get('ALLOWED_ORIGINS')??'http://localhost:5173,http://127.0.0.1:5173,https://charm-sales.vercel.app,https://sales.charmkenya.com').split(',').map(s=>s.trim().replace(/\/$/,''));
+function originAllowed(origin:string){if(!origin)return true;if(allowed.includes(origin))return true;try{const u=new URL(origin),host=u.hostname.toLowerCase();if(u.protocol==='http:'&&['localhost','127.0.0.1'].includes(host))return true;return u.protocol==='https:'&&(host==='charmkenya.com'||host.endsWith('.charmkenya.com'));}catch{return false;}}
 Deno.serve(async req=>{
  const origin=req.headers.get('origin')??'';
- const headers={'Access-Control-Allow-Origin':allowed.includes(origin)?origin:allowed[0],'Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type','Access-Control-Allow-Methods':'POST, OPTIONS','Vary':'Origin','Content-Type':'application/json'};
+ const headers={'Access-Control-Allow-Origin':origin||allowed[0],'Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type','Access-Control-Allow-Methods':'POST, OPTIONS','Vary':'Origin','Content-Type':'application/json'};
  const reply=(status:number,error:unknown)=>new Response(JSON.stringify(error),{status,headers});
- if(origin&&!allowed.includes(origin))return reply(403,{error:'forbidden'});
+ if(!originAllowed(origin))return reply(403,{error:'originNotAllowed'});
  if(req.method==='OPTIONS')return new Response(null,{headers});
  if(req.method!=='POST')return reply(405,{error:'invalid'});
  const url=Deno.env.get('SUPABASE_URL')!;
@@ -14,7 +15,8 @@ Deno.serve(async req=>{
  const {data:{user},error}=await caller.auth.getUser(token);
  if(error||!user)return reply(401,{error:'unauthorized'});
  const {data:admin,error:roleError}=await caller.rpc('is_admin');
- if(roleError||!admin)return reply(403,{error:'forbidden'});
+ if(roleError){const missing=['PGRST202','PGRST203','PGRST205'].includes(roleError.code??'');return reply(missing?503:403,{error:missing?'staffMigrationsMissing':'forbidden'});}
+ if(!admin)return reply(403,{error:'forbidden'});
  try{
   const {name,email,role,password}=await req.json();
   if(typeof name!=='string'||!name.trim()||name.length>200||typeof email!=='string'||email.length>254||!/^\S+@\S+\.\S+$/.test(email)||!['admin','salesperson','finance_officer'].includes(role)||typeof password!=='string'||password.length<12||password.length>128)return reply(422,{error:'invalid'});
@@ -26,8 +28,9 @@ Deno.serve(async req=>{
   if(linked.error){
    // Preserve Auth on an uncertain RPC response. Deletion could race a committed staff link.
    // An unmapped account cannot access company data; Admin can reconcile the verified email.
-   return reply(409,{error:'linkFailed'});
+   const missing=['PGRST202','PGRST203','PGRST205','42883'].includes(linked.error.code??'');
+   return reply(missing?503:409,{error:missing?'staffMigrationsMissing':linked.error.code==='42501'?'forbidden':'linkFailed'});
   }
   return reply(200,{id:linked.data});
- }catch{return reply(400,{error:'invalid'});}
+ }catch{return reply(503,{error:'staffServiceUnavailable'});}
 });

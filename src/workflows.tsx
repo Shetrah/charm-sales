@@ -29,7 +29,7 @@ export function RecordForm({kind,scope,profile,row,onClose,onSaved}:Props){
   if(kind==='staff'){
    if(!supabase)throw new Error('configuration');
    const {data,error}=await supabase.functions.invoke('add-staff',{body:{name:v.name,email:v.email,role:v.role,password:v.temporaryPassword}});
-   if(error||data?.error){let code=data?.error; if(!code&&error&&'context' in error){try{code=(await error.context.clone().json()).error;}catch{}}throw new Error(['linkFailed','staffExists','invalid','forbidden'].includes(code)?code:'staffProvisioningFailed');}onSaved();return;
+   if(error||data?.error){let code=data?.error;let status=0;if(error&&'context' in error){status=Number((error.context as Response).status??0);try{const body=await (error.context as Response).clone().json();code=code??body?.error??body?.message;}catch{}}if(status===403&&!code)code='originNotAllowed';if(!code&&error?.name==='FunctionsFetchError')code='staffServiceUnavailable';if(status===401||code==='unauthorized')code='sessionExpired';const known=['linkFailed','staffExists','invalid','forbidden','originNotAllowed','staffMigrationsMissing','staffServiceUnavailable','sessionExpired'];throw new Error(known.includes(String(code))?String(code):'staffProvisioningFailed');}onSaved();return;
   }
   if(kind==='products'){const {error}=await supabase!.rpc('create_product_variant',{p_sku:v.sku,p_category:v.category,p_capacity:v.capacity,p_fragrance:v.fragrance,p_barcode:v.barcode,p_carton:Number(v.carton),p_unit_price:Number(v.unit_price||0),p_packaging:v.packaging_type,p_formula:v.formula_name,p_volume_ml:v.volume_ml?Number(v.volume_ml):null});if(error)throw error;onSaved();return;}
   if(['orders','payments','clients','plans','expenses','reports','visits'].includes(kind)){
