@@ -8,8 +8,8 @@ import type { Row } from './lib/data';
 
 export default function FinanceWorkQueues({scope,filters,summary,rows,accounts}:{scope:string;filters:FinanceFilters;summary?:Row;rows:Row[];accounts:Row[]}){
  const {t,language}=usePreferences();
- const approved=useQuery({queryKey:[scope,'finance-ready',filters],queryFn:()=>register('requests',{...filters,status:'awaiting_payment'},1),refetchInterval:5000});
- const partial=useQuery({queryKey:[scope,'finance-partial',filters],queryFn:()=>register('requests',{...filters,status:'partial_payments'},1),refetchInterval:5000});
+ const approved=useQuery({queryKey:[scope,'finance-ready',filters],queryFn:()=>register('requests',{...filters,status:'awaiting_payment'},1),refetchInterval:15000,refetchIntervalInBackground:false,refetchOnWindowFocus:true});
+ const partial=useQuery({queryKey:[scope,'finance-partial',filters],queryFn:()=>register('requests',{...filters,status:'partial_payments'},1),refetchInterval:15000,refetchIntervalInBackground:false,refetchOnWindowFocus:true});
  const path=(page:string,status='')=>`/finance/${page}?${new URLSearchParams({status,from:filters.from,to:filters.to,...(filters.owner?{staff:filters.owner}:{})})}`;
  const queues=[{label:'readyToDisburse',value:approved.data?.total??'—',page:'disbursements',status:'awaiting_payment',Icon:CreditCard},
  {label:'continuePartialPayments',value:partial.data?.total??'—',page:'disbursements',status:'partial_payments',Icon:Clock},
