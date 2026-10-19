@@ -14,7 +14,7 @@ test('connected workspace, every direct route, translated tables and mobile navi
  await expect(page.locator(test.info().project.name==='mobile'?'.record-cards':'.desktop-records').getByText('Integration Client',{exact:true})).toBeVisible();
  await page.getByRole('button',{name:'新建记录',exact:true}).click();await page.getByRole('button',{name:'保存',exact:true}).click();
  await expect(page.getByRole('dialog').getByRole('alert')).toHaveText('请检查填写内容并重试。');await page.getByRole('button',{name:'取消',exact:true}).click();
- for(const [route,title] of Object.entries({clients:'客户',products:'产品目录',orders:'订单',payments:'收款',balances:'余额',visits:'拜访',plans:'行程计划',expenses:'差旅申请',reports:'每日报告',routes:'每日路线',staff:'团队',audit:'审计记录'})){
+ for(const [route,title] of Object.entries({clients:'客户',products:'产品目录',orders:'订单',payments:'收款',balances:'余额',visits:'Client Visits',plans:'行程计划',expenses:'差旅申请',reports:'每日报告',routes:'每日路线',staff:'团队',audit:'审计记录'})){
   await page.goto('/'+route);await expect(page.locator('main h1')).toHaveText(title);await expect(page.getByRole('alert')).toHaveCount(0);
  }
  await page.goto('/clients');
@@ -48,21 +48,30 @@ test('an already-open admin page receives a new salesperson submission without a
  await page.goto('/orders');await page.getByLabel('Email address').fill('admin@test.invalid');await page.getByLabel('Password',{exact:true}).fill('test-password-123');await page.getByRole('button',{name:'Sign in',exact:true}).click();await page.goto('/orders');await expect(page.locator('main h1')).toHaveText('Orders');
  const context=await browser.newContext();try{
   const sales=await context.newPage();await sales.goto('http://127.0.0.1:5174/orders');await sales.getByLabel('Email address').fill('sales@test.invalid');await sales.getByLabel('Password',{exact:true}).fill('test-password-123');await sales.getByRole('button',{name:'Sign in',exact:true}).click();await sales.goto('http://127.0.0.1:5174/orders');await sales.getByRole('button',{name:'Create record',exact:true}).click();
-  await sales.getByRole('combobox',{name:'Find a client'}).selectOption({label:'Integration Client'});await sales.getByRole('combobox',{name:'Find a product variant'}).selectOption({index:1});await sales.getByLabel('Price per selected unit (KES)',{exact:true}).fill('7.25');await sales.getByRole('button',{name:'Save',exact:true}).click();await expect(sales.locator('dialog')).toHaveCount(0);
+  await sales.getByRole('combobox',{name:'Find a client'}).selectOption({label:'Integration Client'});await sales.getByRole('combobox',{name:'Find a product variant'}).selectOption({index:1});await sales.getByLabel('Price per selected unit (KES)',{exact:true}).fill('7.25');await sales.getByRole('button',{name:'Save as draft',exact:true}).click();await sales.locator('input[type=file]').setInputFiles({name:'contract.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.4 test')});await expect(sales.getByText(/Contract uploaded/)).toBeVisible();await sales.getByRole('button',{name:'Submit order',exact:true}).click();await expect(sales.locator('dialog')).toHaveCount(0);
   await expect(page.getByRole('cell',{name:'7.25',exact:true})).toBeVisible({timeout:18000});
  }finally{await context.close();}
 });
-test('browser GPS check-in/check-out and manual route capture use secure RPCs',async({page,context})=>{
+test('visit consent, GPS check-in and mandatory report close work and route logging is blocked outside visits',async({page,context})=>{
  await context.grantPermissions(['geolocation']);await context.setGeolocation({latitude:-1.286389,longitude:36.817223,accuracy:12});
  await page.goto('/visits');await page.getByLabel('Email address').fill('sales@test.invalid');await page.getByLabel('Password',{exact:true}).fill('test-password-123');await page.getByRole('button',{name:'Sign in',exact:true}).click();
- await page.goto('/visits');await page.getByRole('button',{name:'Create record',exact:true}).click();
- await page.getByRole('combobox',{name:'Find a client'}).selectOption({label:'Integration Client'});
- await page.getByRole('button',{name:'Capture browser location',exact:true}).click();await expect(page.getByText(/-1.286389/)).toBeVisible();
- await page.getByLabel('Outcome',{exact:true}).selectOption('no-sale');await page.getByLabel('Notes',{exact:true}).fill('Store temporarily closed');await page.getByLabel('Unsuccessful-sale reason',{exact:true}).fill('Closed');
- await page.getByRole('button',{name:'Save',exact:true}).click();await expect(page.locator('dialog')).toHaveCount(0);
- await page.getByRole('button',{name:'View details',exact:true}).click();await page.getByRole('button',{name:'Check out',exact:true}).click();await expect(page.getByRole('button',{name:'Check out',exact:true})).toHaveCount(0);await page.locator('.dialog-actions').getByRole('button',{name:'Close',exact:true}).click();
+ await page.goto('/visits');await page.getByRole('button',{name:'Check in',exact:true}).click();
+ await page.getByRole('combobox',{name:'Choose client'}).selectOption({label:'Integration Client'});
+ await page.getByRole('checkbox').check();await page.getByRole('button',{name:'Check in',exact:true}).last().click();await expect(page.locator('dialog')).toHaveCount(0);
+ await expect(page.getByText('captured')).toBeVisible();
+ await page.getByRole('button',{name:'Complete report & close',exact:true}).click();
+ const report=page.getByRole('dialog');
+ await report.getByRole('button',{name:'Submit report & close',exact:true}).click();await expect(report).toBeVisible();
+ await report.getByLabel('Discussion').fill('Discussed current stock and pricing');
+ await report.getByLabel('Outcome').selectOption('follow-up');
+ await report.getByLabel('Client feedback').fill('Interested in a larger order');
+ await report.getByLabel('Sales opportunities').fill('Potential quarterly bulk order');
+ await report.getByLabel('Follow-up actions').fill('Send quotation');
+ await report.getByLabel('Follow-up deadline').fill(new Date(Date.now()+86400000).toISOString().slice(0,10));
+ await report.getByRole('button',{name:'Submit report & close',exact:true}).click();await expect(page.locator('dialog')).toHaveCount(0);
+ await page.getByRole('button',{name:'Visit details'}).click();await expect(page.getByText('Discussed current stock and pricing')).toBeVisible();await page.getByRole('button',{name:'Close',exact:true}).click();
  await page.goto('/routes');await page.getByRole('button',{name:'Start workday',exact:true}).click();await page.getByRole('button',{name:'Save',exact:true}).click();await expect(page.locator('dialog')).toHaveCount(0);
- await page.getByRole('button',{name:'View details',exact:true}).click();await page.getByRole('button',{name:'Report location now',exact:true}).click();await expect(page.locator('.route-plot circle')).toHaveCount(1);
+ await page.getByRole('button',{name:'View details',exact:true}).click();await page.getByRole('button',{name:'Report location now',exact:true}).click();await expect(page.getByRole('alert')).toHaveCount(1);
  await page.getByRole('button',{name:'End workday',exact:true}).click();await expect(page.getByRole('heading',{name:'Tracking status: Workday ended',exact:true})).toBeVisible();
 });
 test('salesperson submits an exact multi-line order through the connected application',async({page})=>{
@@ -77,7 +86,7 @@ test('salesperson submits an exact multi-line order through the connected applic
  await page.getByRole('combobox',{name:'Find a product variant'}).nth(1).selectOption({index:2});
  await page.getByLabel('Quantity',{exact:true}).nth(1).fill('3');await page.getByLabel('Unit',{exact:true}).nth(1).selectOption('carton');await page.getByLabel('Price per selected unit (KES)',{exact:true}).nth(1).fill('8.20');
  await expect(page.locator('.order-total')).toHaveText('Total (KES): 49.30');
- await page.getByRole('button',{name:'Save',exact:true}).click();await expect(page.locator('dialog')).toHaveCount(0);
+ await page.getByRole('button',{name:'Save as draft',exact:true}).click();await page.locator('input[type=file]').setInputFiles({name:'signed-contract.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.4 contract')});await expect(page.getByText(/Contract uploaded/)).toBeVisible();await page.getByRole('button',{name:'Submit order',exact:true}).click();await expect(page.locator('dialog')).toHaveCount(0);
  await expect(page.getByRole('cell',{name:'49.30',exact:true})).toBeVisible();
  await expect(page.getByRole('button',{name:'Confirm order',exact:true})).toHaveCount(0);
  await page.goto('/staff');await expect(page.locator('main h1')).toHaveText('Overview');

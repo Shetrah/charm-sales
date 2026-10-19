@@ -8,6 +8,7 @@ const admin='00000000-0000-4000-8000-000000000001', a='00000000-0000-4000-8000-0
 let keyCount=10;const key=()=>`10000000-0000-4000-8000-${String(keyCount++).padStart(12,'0')}`;
 async function scalar(sql:string,params:unknown[]=[]):Promise<any>{const r=await db.query(sql,params);return Object.values(r.rows[0]??{})[0];}
 async function asUser(id:string){await db.exec('reset role');await db.query("select set_config('request.jwt.claim.sub',$1,false)",[id]);await db.exec('set role authenticated');}
+async function createOrder(client:number,items:unknown[],requestKey=key()){const encoded=JSON.stringify(items);const id=await scalar('select charm.save_order_draft($1,null,$2,null,$3,\'retailer\')',[requestKey,client,encoded]);const path=`orders/${id}/${key()}.pdf`;await db.query("insert into storage.objects(bucket_id,name) values('charm-private',$1)",[path]);await db.query('select charm.attach_order_contract($1,$2)',[id,path]);await db.query('select charm.submit_order_draft($1)',[id]);return id;}
 beforeAll(async()=>{
  await db.exec(`create role anon; create role authenticated; create role service_role bypassrls;
  create schema auth; create table auth.users(id uuid primary key,email text);
@@ -45,15 +46,16 @@ describe.sequential('Supabase PostgreSQL migration and permissions',()=>{
   await expect(db.query("select charm.save_client($1,'Intrusion','X',null,'Nairobi',3)",[key()])).rejects.toThrow('forbidden');
  });
  it('creates exact multi-line orders and protects concurrent retry payload identity',async()=>{
+  await asUser(a);
   const k=key(),items=JSON.stringify([{product_id:1,quantity:2,unit:'bottle',unit_price:'12.35'},{product_id:2,quantity:3,unit:'carton',unit_price:'8.20'}]);
-  order=await scalar('select charm.submit_order($1,1,null,$2)',[k,items]);
+  order=await createOrder(1,JSON.parse(items),k);
   expect(await scalar('select total from charm.orders where id=$1',[order])).toBe('49.30');
-  expect(await scalar('select charm.submit_order($1,1,null,$2)',[k,items])).toBe(order);
-  await expect(db.query('select charm.submit_order($1,2,null,$2)',[key(),items])).rejects.toThrow('forbidden');
-  await expect(db.query('select charm.submit_order($1,1,null,null)',[key()])).rejects.toThrow('invalid');
-  await expect(db.query('select charm.submit_order($1,1,null,$2)',[key(),'{}'])).rejects.toThrow('invalid');
-  await expect(db.query('select charm.submit_order($1,1,null,$2)',[k,'[]'])).rejects.toThrow('duplicateConflict');
-  await asUser(b);await expect(db.query('select charm.submit_order($1,1,null,$2)',[k,items])).rejects.toThrow('duplicateConflict');
+  expect(await scalar('select charm.save_order_draft($1,null,1,null,$2,\'retailer\')',[k,items])).toBe(order);
+  await expect(db.query("select charm.save_order_draft($1,null,2,null,$2,'retailer')",[key(),items])).rejects.toThrow('forbidden');
+  await expect(db.query("select charm.save_order_draft($1,null,1,null,null,'retailer')",[key()])).rejects.toThrow();
+  await expect(db.query("select charm.save_order_draft($1,null,1,null,'{}','retailer')",[key()])).rejects.toThrow('invalid');
+  await expect(db.query("select charm.save_order_draft($1,null,1,null,'[]','retailer')",[key()])).rejects.toThrow('invalid');
+  await asUser(b);await expect(db.query("select charm.save_order_draft($1,null,1,null,$2,'retailer')",[k,items])).rejects.toThrow('duplicateConflict');
  });
  it('requires admin approval, counts pending as zero and records approvals atomically',async()=>{
   await asUser(a);const month=new Date().toISOString().slice(0,7)+'-01';
@@ -77,7 +79,7 @@ describe.sequential('Supabase PostgreSQL migration and permissions',()=>{
   expect(await scalar('select balance from charm.order_balances where id=$1',[order])).toBe('39.30');
  });
  it('blocks approval of own orders, payments and expense requests',async()=>{
-  await asUser(admin);const own=await scalar('select charm.submit_order($1,1,null,$2)',[key(),JSON.stringify([{product_id:1,quantity:1,unit:'bottle',unit_price:'5.00'}])]);
+  await asUser(admin);const own=await createOrder(1,[{product_id:1,quantity:1,unit:'bottle',unit_price:'5.00'}]);
   await expect(db.query('select charm.approve_order($1,true)',[own])).rejects.toThrow('selfApproval');
   const p=await scalar('select charm.submit_payment($1,$2,\'1.00\',\'own\',now(),null)',[key(),order]);
   await expect(db.query('select charm.review_payment($1,true)',[p])).rejects.toThrow('selfApproval');
@@ -96,7 +98,8 @@ describe.sequential('Supabase PostgreSQL migration and permissions',()=>{
  it('enforces private uploads and immutable verified payment evidence',async()=>{
   await asUser(a);const path=`payments/${payment}/${key()}.png`;
   await expect(db.query("insert into storage.objects(bucket_id,name) values('charm-private',$1)",[path])).rejects.toThrow();
-  const visit=await scalar("select charm.submit_visit($1,1,-1.2,36.8,10,'no-sale','Store closed','Closed',null,null)",[key()]);
+  const visit=await scalar("select charm.start_visit($1,1,true,-1.2,36.8,10,'captured',null)",[key()]);
+  await db.query("select charm.submit_visit_report($1,$2,'Discussed account','no-sale','Client asked for callback','Seasonal stock order','Call to confirm range',(now() at time zone 'Africa/Nairobi')::date+1,2)",[key(),visit]);
   const photo=`visits/${visit}/${key()}.png`;
   await db.query("insert into storage.objects(bucket_id,name) values('charm-private',$1)",[photo]);
   await db.query("select charm.attach_file('visits',$1,$2)",[visit,photo]);
@@ -109,11 +112,13 @@ describe.sequential('Supabase PostgreSQL migration and permissions',()=>{
   await asUser(a);const w=await scalar('select charm.start_workday()');
   await expect(db.query('select charm.location_batch($1,null)',[w])).rejects.toThrow('invalid');
   expect(await scalar('select charm.start_workday()')).toBe(w);
+  const visit=await scalar("select charm.start_visit($1,1,true,-1.2,36.8,8,'captured',null)",[key()]);
   const points=JSON.stringify([{submission_key:key(),latitude:-1.2,longitude:36.8,accuracy_m:8,recorded_at:new Date().toISOString()}]);
-  await db.query('select charm.end_workday($1)',[w]);
   expect(await scalar('select charm.location_batch($1,$2)',[w,points])).toBe(1);
   expect(await scalar('select charm.location_batch($1,$2)',[w,points])).toBe(1);
   expect(await scalar('select count(*)::int from charm.location_points')).toBe(1);
+  await db.query("select charm.submit_visit_report($1,$2,'Discussed','follow-up','Positive','Bulk opportunity','Call client',(now() at time zone 'Africa/Nairobi')::date+1,2)",[key(),visit]);
+  await db.query('select charm.end_workday($1)',[w]);
   await expect(db.query('select charm.location_batch($1,$2)',[w,JSON.stringify([{submission_key:key(),latitude:999,longitude:1,accuracy_m:8,recorded_at:new Date().toISOString()}])])).rejects.toThrow('invalidLocation');
   await asUser(b);expect(await scalar('select count(*)::int from charm.workdays')).toBe(0);await expect(db.query('select charm.location_batch($1,$2)',[w,points])).rejects.toThrow('forbidden');
  });
@@ -157,6 +162,31 @@ describe.sequential('Supabase PostgreSQL migration and permissions',()=>{
   await asUser(admin);await expect(db.query("select charm.manage_staff(1,'delete')")).rejects.toThrow('cannotManageSelf');
   await expect(db.query("select charm.manage_staff(1,'deactivate')")).rejects.toThrow('cannotManageSelf');
   await expect(db.query("select charm.manage_staff(2,'anything')")).rejects.toThrow('invalid');
+ });
+ it('requires consent, records GPS exceptions, enforces one active visit and requires a unique complete report to close',async()=>{
+  await asUser(a);
+  await expect(db.query("select charm.start_visit($1,1,false,null,null,null,'failed','GPS denied')",[key()])).rejects.toThrow('consentRequired');
+  const startKey=key();const failed=await scalar("select charm.start_visit($1,1,true,null,null,null,'failed','Browser location permission denied')",[startKey]);
+  expect(await scalar("select charm.start_visit($1,1,true,null,null,null,'failed','Browser location permission denied')",[startKey])).toBe(failed);
+  expect(await scalar('select gps_status from charm.visits where id=$1',[failed])).toBe('failed');
+  expect(await scalar("select count(*)::int from charm.visit_exceptions where visit_id=$1 and kind='gps_failure'",[failed])).toBe(1);
+  await expect(db.query("select charm.start_visit($1,1,true,-1.2,36.8,8,'captured',null)",[key()])).rejects.toThrow('activeVisitExists');
+  await expect(db.query("select charm.submit_visit_report($1,$2,'','no-sale','Feedback','Opportunity','Call',(now() at time zone 'Africa/Nairobi')::date+1,2)",[key(),failed])).rejects.toThrow('reportIncomplete');
+  await asUser(b);expect(await scalar('select count(*)::int from charm.visits')).toBe(0);expect(await scalar('select count(*)::int from charm.visit_exceptions')).toBe(0);expect(await scalar("select charm.visit_report_summary((now() at time zone 'Africa/Nairobi')::date,(now() at time zone 'Africa/Nairobi')::date,null,null,null,'daily')")).toEqual([]);await expect(db.query("select charm.visit_report_summary((now() at time zone 'Africa/Nairobi')::date,(now() at time zone 'Africa/Nairobi')::date,2,null,null,'daily')")).rejects.toThrow('forbidden');await expect(db.query("select charm.submit_visit_report($1,$2,'Discussed','no-sale','Feedback','Opportunity','Call',(now() at time zone 'Africa/Nairobi')::date+1,3)",[key(),failed])).rejects.toThrow('forbidden');await expect(db.query("select charm.override_visit_gps($1,-1.2,36.8,8,'not allowed')",[failed])).rejects.toThrow('forbidden');
+  await asUser(a);const reportKey=key();
+  await db.query("select charm.submit_visit_report($1,$2,'Discussed pricing','follow-up','Positive feedback','Bulk order','Send quotation',(now() at time zone 'Africa/Nairobi')::date+1,2)",[reportKey,failed]);
+  expect(await scalar('select check_out_at is not null from charm.visits where id=$1',[failed])).toBe(true);
+  await db.query("select charm.submit_visit_report($1,$2,'Discussed pricing','follow-up','Positive feedback','Bulk order','Send quotation',(now() at time zone 'Africa/Nairobi')::date+1,2)",[reportKey,failed]);
+  await expect(db.query("select charm.submit_visit_report($1,$2,'Discussed pricing','follow-up','Positive feedback','Bulk order','Send quotation',(now() at time zone 'Africa/Nairobi')::date+1,2)",[key(),failed])).rejects.toThrow('visitAlreadyClosed');
+  await expect(db.query('select charm.checkout_visit($1)',[failed])).rejects.toThrow();
+  const network=await scalar("select charm.start_visit($1,1,true,null,null,null,'network_failed','Mobile data unavailable')",[key()]);
+  expect(await scalar("select kind from charm.visit_exceptions where visit_id=$1",[network])).toBe('network_failure');
+  await asUser(admin);await db.query("select charm.override_visit_gps($1,-1.2,36.8,8,'Field supervisor verified location')",[network]);expect(await scalar("select gps_status from charm.visits where id=$1",[network])).toBe('override');expect(await scalar("select count(*)::int from charm.audit_logs where entity='visits' and entity_id=$1 and action='gpsOverride'",[network])).toBe(1);
+  await asUser(a);
+  await db.query("select charm.submit_visit_report($1,$2,'Discussed','follow-up','Positive','Bulk opportunity','Call client',(now() at time zone 'Africa/Nairobi')::date+1,2)",[key(),network]);
+  await asUser(admin);await expect(db.query('select charm.override_visit_gps($1,-1.2,36.8,8,\'audit\')',[failed])).rejects.toThrow('notFound');
+  const daily=await scalar("select charm.visit_report_summary((now() at time zone 'Africa/Nairobi')::date,(now() at time zone 'Africa/Nairobi')::date,null,null,null,'daily')");
+  expect(daily[0].completed).toBe(4);expect(daily[0].pending_reports).toBe(0);expect(daily[0].outcomes['follow-up']).toBe(3);
  });
  it('deactivates and reactivates staff without changing ownership or financial history',async()=>{
   await asUser(admin);await db.query("select charm.manage_staff(2,'deactivate')");

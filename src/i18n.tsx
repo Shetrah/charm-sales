@@ -39,7 +39,7 @@ type Preferences = {language:'en'|'zh';theme:'light'|'dark';t:(key:string)=>stri
 const Context=createContext<Preferences>(null!);
 export function PreferencesProvider({children}:{children:ReactNode}) {
  const [language,setLanguage]=useState<'en'|'zh'>(()=>localStorage.getItem('charm-language')==='zh'?'zh':'en');
- const [theme,setTheme]=useState<'light'|'dark'>(()=>localStorage.getItem('charm-theme')==='dark'?'dark':'light');
+ const [theme,setTheme]=useState<'light'|'dark'>(()=>localStorage.getItem('charm-theme')==='light'?'light':'dark');
  useEffect(()=>{localStorage.setItem('charm-language',language);document.documentElement.lang=language==='zh'?'zh-CN':'en-KE';},[language]);
  useEffect(()=>{localStorage.setItem('charm-theme',theme);document.documentElement.dataset.theme=theme;},[theme]);
  return <Context.Provider value={{language,theme,t:key=>words[key as Key]?.[language==='en'?0:1]??key,toggleLanguage:()=>setLanguage(language==='en'?'zh':'en'),toggleTheme:()=>setTheme(theme==='light'?'dark':'light')}}>{children}</Context.Provider>;
