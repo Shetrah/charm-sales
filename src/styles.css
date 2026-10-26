@@ -238,3 +238,134 @@ body{background:radial-gradient(ellipse at 85% -10%,color-mix(in srgb,var(--teal
   .stat strong{font-size:clamp(14px,5vw,18px)}
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   COMPREHENSIVE MOBILE RESPONSIVENESS – AUDIT & FIX
+   Target viewports: 320px · 360px · 375px · 390px · 414px · 430px
+                     768px · 1024px · 1280px+
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── 1. Table containment: prevent page-level horizontal scroll ── */
+/* Ensures every .table-wrap scrolls internally, not the whole page */
+.records{overflow:hidden;max-width:100%}
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;width:100%;max-width:100%}
+
+/* ── 2. Sensible global table minimums ─────────────────────────── */
+/* Replaced the old global min-width:760px with something more
+   targeted. Each table now has at least enough room to breathe. */
+table{min-width:0;width:100%}
+
+/* ── 3. Visits page table: wider minimum, nowrap key cells ──────── */
+.visits-table{min-width:860px;width:100%}
+.visits-table th,.visits-table td{white-space:nowrap}
+/* Allow long text fields (discussion, client name) to wrap */
+.visits-table td.visits-td-wrap{white-space:normal;min-width:120px;max-width:200px;overflow-wrap:anywhere}
+/* GPS cell – keep on one line but truncate gracefully */
+.visits-table td.visits-td-gps{min-width:140px;font-size:11px}
+/* Action buttons cell – wide enough to hold "Visit details" */
+.visits-table td.visits-td-actions{min-width:130px}
+.visits-table td.visits-td-actions button{white-space:nowrap;min-height:34px;padding:6px 10px;font-size:11px}
+
+/* ── 4. Consolidated reporting table ───────────────────────────── */
+.consolidated-table{min-width:520px;width:100%}
+.consolidated-table th,.consolidated-table td{white-space:nowrap}
+
+/* ── 5. Row action buttons: never letter-wrap ───────────────────── */
+.row-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.row-actions button,.row-actions a{white-space:nowrap;min-width:0;min-height:34px}
+
+/* ── 6. Status badges: always inline ───────────────────────────── */
+.badge{white-space:nowrap}
+
+/* ── 7. Visits toolbar: export buttons + search stack gracefully ── */
+.visits-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:16px 22px;border-bottom:1px solid var(--border);background:linear-gradient(120deg,color-mix(in srgb,var(--purple) 2%,var(--surface)),var(--surface))}
+.visits-toolbar .visits-search{display:flex;align-items:center;gap:8px;flex:1;min-width:180px;max-width:430px;color:var(--muted)}
+.visits-toolbar .visits-search input{width:100%;min-width:0}
+.visits-toolbar label{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);white-space:nowrap}
+.visits-toolbar label input[type=date]{min-width:0;padding:8px 10px;font-size:12px}
+.visits-toolbar select{font-size:12px;padding:8px 10px;min-width:0}
+.visits-toolbar .visits-export-group{display:flex;gap:8px;align-items:center;flex-shrink:0}
+.visits-toolbar .visits-export-group button{white-space:nowrap;min-height:38px;padding:8px 12px;font-size:12px}
+
+/* ── 8. Page-snapshot for Visits (5 stat boxes) ────────────────── */
+/* On desktop these are already set to repeat(5,minmax(0,1fr))      */
+/* We ensure they wrap gracefully on smaller screens below          */
+
+/* ── 9. Box-sizing + min-width:0 guards for flex/grid children ─── */
+.content *{box-sizing:border-box}
+.toolbar>*{min-width:0}
+.page-heading>*{min-width:0}
+
+/* ── 10. Visits page-snapshot: 3-col on tablet, 2-col on phone ─── */
+.visits-snapshot{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:20px}
+.visits-snapshot>div{padding:14px 16px;border:1px solid var(--border);border-radius:14px;background:var(--surface);box-shadow:var(--shadow);display:flex;flex-direction:column;gap:6px}
+.visits-snapshot span{font-size:11px;color:var(--muted)}
+.visits-snapshot strong{font-size:22px;font-variant-numeric:tabular-nums;letter-spacing:-.3px;color:var(--text)}
+
+@media(max-width:1100px){
+  .visits-snapshot{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+
+@media(max-width:760px){
+  /* Visits snapshot: 2 columns */
+  .visits-snapshot{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:14px}
+  .visits-snapshot>div{padding:11px 13px}
+  .visits-snapshot strong{font-size:18px}
+  .visits-snapshot span{font-size:10px}
+
+  /* Visits toolbar: full-width stacked layout */
+  .visits-toolbar{padding:12px 14px;gap:8px}
+  .visits-toolbar label{flex:1;min-width:calc(50% - 8px)}
+  .visits-toolbar label input[type=date]{width:100%}
+  .visits-toolbar .visits-search{min-width:100%;max-width:none;flex-basis:100%;order:-1}
+  .visits-toolbar select{flex:1;min-width:calc(50% - 8px)}
+  /* Export buttons: side by side on their own row */
+  .visits-toolbar .visits-export-group{width:100%;justify-content:flex-end}
+  .visits-toolbar .visits-export-group button{flex:1;max-width:120px;justify-content:center;display:inline-flex;gap:6px;align-items:center}
+
+  /* All toolbars on mobile: wrap gracefully */
+  .toolbar{padding:12px 14px;gap:8px;flex-wrap:wrap}
+  .toolbar .search{min-width:100%;max-width:none;flex-basis:100%}
+  .toolbar select,.toolbar>input,.toolbar>label{flex:1;min-width:calc(50% - 8px);font-size:13px;min-height:42px}
+
+  /* Keep tables scrollable inside the card */
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  /* On mobile, the old global min-width:760px crushed columns → letters.
+     Keep a sensible minimum so each column stays readable.        */
+  table{min-width:560px}
+  .visits-table{min-width:800px}
+  .consolidated-table{min-width:420px}
+
+  /* Row actions: don't let them stack to zero width */
+  .row-actions{gap:5px;flex-wrap:wrap}
+  .row-actions button,.row-actions a{font-size:11px;padding:6px 9px;min-height:34px;white-space:nowrap}
+
+  /* Pagination: wrap on very narrow */
+  .pagination{flex-wrap:wrap;padding:12px 14px;gap:7px}
+  .pagination button{min-height:40px;flex:1}
+}
+
+@media(max-width:480px){
+  /* Visits snapshot: 2 tighter columns, then overflow to scroll */
+  .visits-snapshot{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  .visits-snapshot>div{padding:9px 10px}
+  .visits-snapshot strong{font-size:16px}
+  .visits-snapshot span{font-size:9px}
+
+  /* On the very smallest phones, keep table scrolling intact but
+     give it a visual hint (gradient fade on right edge)           */
+  .table-wrap{position:relative}
+
+  /* Ensure toolbar items don't shrink to nothing */
+  .visits-toolbar label,.visits-toolbar select{min-width:140px}
+  .visits-toolbar .visits-export-group button{font-size:11px;padding:7px 10px}
+}
+
+@media(max-width:360px){
+  /* Extra-tight phones (320-360px) */
+  .visits-snapshot{grid-template-columns:1fr 1fr}
+  .visits-snapshot strong{font-size:15px}
+  .toolbar select,.toolbar>input,.toolbar>label{min-width:100%;flex-basis:100%}
+  .row-actions{gap:4px}
+  .row-actions button,.row-actions a{font-size:10px;padding:5px 7px}
+}
+
