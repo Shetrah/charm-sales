@@ -22,7 +22,7 @@ export function RecordJourney({section,row}:{section:string;row:Row}) {
 export function FinancePanel({section,row,scope}:{section:string;row:Row;scope:string}) {
  const {t,language}=usePreferences();const orderId=section==='payments'?row.order_id:row.id;
  const q=useQuery({queryKey:[scope,'finance',orderId],enabled:['orders','payments','balances'].includes(section)&&section!=='balances',queryFn:async()=>{
-  const {data,error}=await supabase!.from('order_balances').select('*').eq('id',orderId).limit(1);if(error)throw databaseError(error);return data?.[0] as Row|undefined;
+  const {data,error}=await supabase!.from('order_balances').select('*').eq('id',orderId).limit(1);if(error)throw databaseError(error);return (data?.[0] as Row|undefined)??null;
  },refetchInterval:30000});
  if(['orders','payments','balances'].includes(section)){
   const balance=section==='balances'?row:q.data;
