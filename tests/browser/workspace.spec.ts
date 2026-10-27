@@ -58,7 +58,7 @@ test('visit consent, GPS check-in and mandatory report close work and route logg
  await page.goto('/visits');await page.getByRole('button',{name:'Check in',exact:true}).click();
  await page.getByRole('combobox',{name:'Choose client'}).selectOption({label:'Integration Client'});
  await page.getByRole('checkbox').check();await page.getByRole('button',{name:'Check in',exact:true}).last().click();await expect(page.locator('dialog')).toHaveCount(0);
- await expect(page.getByText('captured')).toBeVisible();
+ await expect(page.locator('.desktop-records').getByText('captured')).toBeVisible();
  await page.getByRole('button',{name:'Complete report & close',exact:true}).click();
  const report=page.getByRole('dialog');
  await report.getByRole('button',{name:'Submit report & close',exact:true}).click();await expect(report).toBeVisible();
