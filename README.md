@@ -9,7 +9,7 @@ Company management system built with React, TypeScript, Vite and Supabase, shari
 
 Run `npm ci`, configure public Supabase values in `.env.local`, then `npm run dev`. Verify with `npm test`, `npm run test:e2e` and `npm run build`.
 
-See [company portal setup](docs/COMPANY_HUB.md), [Finance controls](docs/FINANCE_PORTAL.md), [migration guide](docs/MIGRATION.md) and [Vercel configuration](docs/VERCEL_ENV.md).
+See [company portal setup](docs/COMPANY_HUB.md), [Finance controls](docs/FINANCE_PORTAL.md), [migration guide](docs/MIGRATION.md), [reporting](docs/REPORTING.md), [mobile/PWA status](docs/MOBILE_PWA.md) and [Vercel configuration](docs/VERCEL_ENV.md).
 
 React source/assets live in `src/` and `frontend-public/`. Historical SQL migrations remain in `supabase/migrations/`. Unused Laravel source and dependencies have been removed. Company database records and private configuration have not been deleted.
 

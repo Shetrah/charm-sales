@@ -1,0 +1,139 @@
+/* Contract-first orders, document capture and premium navigation shell. */
+.sidebar{overflow:hidden}
+.sidebar-close{display:none;position:absolute;top:10px;right:10px;z-index:2}
+.sidebar-scrim{display:none}
+.sidebar-footer{flex-wrap:wrap;gap:12px;align-items:stretch;flex-shrink:0;max-height:48vh;overflow-y:auto}
+.profile-chip{display:flex;align-items:center;gap:10px;min-width:0;width:100%}
+.profile-chip .avatar{flex:0 0 36px;width:36px;height:36px}
+.profile-chip div{min-width:0}
+.profile-chip strong,.profile-chip small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.profile-chip small{font-size:10px;margin-top:2px;color:var(--muted)}
+.footer-links{display:grid;gap:4px;width:100%}
+.footer-links a,.footer-links button{display:flex;align-items:center;gap:9px;width:100%;min-height:38px;padding:8px 9px;border:0;border-radius:8px;background:transparent;color:var(--muted);font-size:12px;text-align:left}
+.footer-links a:hover,.footer-links button:hover{background:var(--soft);color:var(--purple)}
+.footer-links span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.footer-help{border-radius:9px;background:var(--soft);padding:10px 11px;font-size:11px;color:var(--muted)}
+.footer-help p{font-size:11px;line-height:1.5;margin:0 0 5px;color:var(--muted)}
+.footer-help p:last-child{margin:0}
+.footer-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px solid var(--border);padding-top:10px;width:100%;font-size:10px;color:var(--muted)}
+.signout{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:6px 9px;font-size:11px;border-color:color-mix(in srgb,var(--purple) 25%,var(--border));color:var(--purple)}
+.record-card-actions{display:flex;gap:0;align-items:stretch;margin-top:18px;border-top:1px solid var(--border)}
+.record-card-actions .record-open{margin-top:0;border-top:0;padding:13px 0 0;width:auto;flex:1;min-width:0;gap:6px}
+.record-card-actions .record-open+.record-open{border-left:1px solid var(--border);margin-left:12px;padding-left:12px;justify-content:flex-end}
+.contract-summary{display:flex;align-items:center;gap:10px;min-width:0;border-radius:10px;background:var(--soft);padding:10px 11px;margin-top:14px}
+.contract-summary-icon{display:inline-flex;align-items:center;justify-content:center;flex:0 0 30px;width:30px;height:30px;border-radius:8px;background:color-mix(in srgb,var(--purple) 12%,var(--surface));color:var(--purple)}
+.contract-summary-text{min-width:0;flex:1}
+.contract-summary-title{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:12px;font-weight:600}
+.contract-summary-title em{font-style:normal;font-size:10px;color:var(--muted)}
+.contract-summary small{display:block;margin-top:3px;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.contract-summary .text-button{flex-shrink:0;min-height:34px}
+.contract-open{font-size:11px;white-space:nowrap}
+.check-line{display:flex;gap:10px;align-items:flex-start;font-size:13px;font-weight:550;line-height:1.5;margin:14px 0;min-height:44px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
+.check-line input{width:20px;height:20px;flex:0 0 20px;margin:0;accent-color:var(--purple)}
+.order-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;list-style:none;padding:0;margin:0 0 16px}
+.order-steps li{position:relative;display:flex;align-items:center;justify-content:center;min-height:34px;padding:6px 8px;border-radius:8px;background:var(--soft);color:var(--muted);font-size:10px;font-weight:650;text-align:center;line-height:1.25}
+.order-steps li.active{background:color-mix(in srgb,var(--teal) 14%,var(--surface));color:var(--teal)}
+.order-step-section{border-top:1px solid var(--border);padding-top:18px;margin-top:18px}
+.order-step-section h3{display:flex;align-items:center;gap:9px;margin:0 0 12px}
+.order-step-section h3>span{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;flex:0 0 22px;border-radius:50%;background:var(--purple);color:#fff;font-size:11px}
+.order-step-section .inline-heading{font-size:13px;margin:16px 0 8px}
+.order-line{border:1px solid var(--border);border-radius:11px;padding:12px;margin-bottom:12px;background:color-mix(in srgb,var(--soft) 45%,var(--surface))}
+.order-line .form-grid{margin-bottom:0}
+.order-line .text-button{min-height:40px;padding:0 8px}
+.order-total{display:flex;justify-content:space-between;gap:12px;border-top:1px dashed var(--border);padding-top:12px;margin-top:14px;font-size:14px;font-weight:700}
+.document-uploaders{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:end}
+.document-uploaders .field{margin-bottom:0}
+.doc-button{display:flex;align-items:center;justify-content:center;gap:8px;min-height:46px;border:1px dashed color-mix(in srgb,var(--purple) 45%,var(--border));border-radius:9px;background:color-mix(in srgb,var(--purple) 5%,var(--surface));color:var(--purple);font-size:13px;font-weight:600;cursor:pointer;padding:10px 13px}
+.doc-button.disabled{opacity:.5;pointer-events:none}
+.doc-button input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.pending-uploads{display:grid;gap:8px;margin:12px 0}
+.pending-upload{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 10px;align-items:center;border:1px solid var(--border);border-radius:9px;padding:10px 11px;font-size:12px;background:var(--surface)}
+.pending-upload strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pending-upload small{font-size:10px}
+.pending-upload .error-notice,.pending-upload>.notice{grid-column:1/-1}
+.pending-upload button{min-height:34px;font-size:11px}
+.upload-progress{grid-column:1/-1;height:6px;border-radius:999px;background:var(--soft);overflow:hidden}
+.upload-progress span{display:block;height:100%;background:linear-gradient(90deg,var(--purple),var(--teal));border-radius:inherit;transition:width .25s}
+.document-list{display:grid;gap:8px}
+.document-row{display:flex;align-items:center;gap:10px;min-width:0;border:1px solid var(--border);border-radius:9px;padding:10px 11px;background:var(--surface)}
+.document-icon{display:inline-flex;align-items:center;justify-content:center;flex:0 0 32px;width:32px;height:32px;border-radius:8px;background:var(--soft);color:var(--purple)}
+.document-row>div{min-width:0;flex:1}
+.document-row strong{display:block;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.document-row small{display:block;font-size:10px;margin-top:2px;color:var(--muted)}
+.document-row .text-button{min-height:34px;flex-shrink:0}
+.document-row .text-button.danger{color:#d45268}
+.contract-panel,.contract-review-summary{border:1px solid var(--border);border-radius:13px;padding:16px;margin:18px 0;background:color-mix(in srgb,var(--soft) 38%,var(--surface))}
+.panel-title{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
+.panel-title h3{margin:2px 0 0}
+.contract-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 16px;margin:0 0 14px}
+.contract-meta div{min-width:0}
+.contract-meta dt{font-size:10px;font-weight:650;letter-spacing:.4px;text-transform:uppercase;color:var(--muted)}
+.contract-meta dd{margin:3px 0 0;font-size:12px;font-weight:550;overflow-wrap:anywhere}
+.contract-terms{margin:0 0 14px}
+.contract-terms summary{cursor:pointer;font-size:12px;font-weight:650;color:var(--purple);min-height:34px;display:flex;align-items:center}
+.contract-terms p,.contract-terms-read{border-radius:9px;background:var(--surface);border:1px solid var(--border);padding:11px 12px;font-size:12px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--text)}
+.contract-document-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.contract-document-head h4{margin:0;font-size:12px;font-weight:650}
+.contract-history{margin-top:14px;border-top:1px solid var(--border);padding-top:12px}
+.contract-history h3,.contract-history summary{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:650;min-height:34px;cursor:pointer;margin:0 0 8px}
+.version-row{border:1px solid var(--border);border-radius:9px;padding:8px 10px;margin-bottom:7px;background:var(--surface)}
+.version-row summary{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:11px;cursor:pointer;min-height:30px}
+.version-row summary span{color:var(--muted)}
+.version-row summary small{margin-left:auto;font-size:10px;color:var(--muted)}
+.version-row .contract-meta{margin:10px 0 8px}
+.version-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-bottom:1px dashed var(--border);padding:7px 0;font-size:11px}
+.version-line:last-child{border-bottom:0}
+.version-line small{width:100%;color:var(--muted)}
+.contract-panel-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.contract-panel-actions button{min-height:42px}
+.contract-action-box{border:1px dashed var(--border);border-radius:10px;padding:12px;margin-top:12px;background:var(--surface)}
+.contract-action-box .field{margin-bottom:10px}
+.contract-action-box .row-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.doc-private-hint{display:flex;align-items:flex-start;gap:7px;font-size:10px;line-height:1.5;color:var(--muted);margin:10px 0 0}
+.doc-preview-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.doc-preview-title{min-width:0}
+.doc-preview-title strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
+.doc-preview-title small{display:block;margin-top:3px;font-size:10px;color:var(--muted)}
+.doc-preview-tools{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)}
+.doc-zoom{display:flex;align-items:center;gap:4px;justify-content:flex-end;margin-bottom:6px}
+.doc-viewer{min-height:200px;max-height:56vh;overflow:auto;border:1px solid var(--border);border-radius:10px;background:var(--soft);display:grid;place-items:center;padding:6px}
+.doc-iframe{width:100%;height:54vh;border:0;border-radius:8px;background:#fff}
+.doc-image-scroll{width:100%;height:54vh;overflow:auto;display:grid;place-items:start center}
+.doc-image-scroll img{max-width:100%;height:auto;transform-origin:top center;border-radius:6px;background:#fff}
+.doc-preview-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.doc-preview-actions button{display:inline-flex;align-items:center;gap:7px;min-height:42px}
+.review-document-list{display:grid;gap:8px;margin-top:10px}
+.review-document{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto;gap:1px 9px;align-items:center;text-align:left;min-height:48px;padding:9px 11px}
+.review-document svg{grid-row:1/3;color:var(--purple)}
+.review-document span{font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.review-document small{font-size:10px;color:var(--muted)}
+.contract-review-section{border:1px solid color-mix(in srgb,var(--teal) 28%,var(--border));border-radius:11px;padding:14px;margin-top:18px}
+.contract-review-section>.notice.error{border-color:#d45268;background:color-mix(in srgb,#d45268 8%,var(--surface));color:#a43143}
+.contract-review-section>.notice ul{margin:6px 0 0;padding-left:18px}
+
+@media(max-width:760px){
+ .sidebar-close{display:inline-flex}
+ .sidebar-scrim{display:block;position:fixed;inset:0;z-index:28;border:0;border-radius:0;padding:0;background:#101322a8;backdrop-filter:blur(2px)}
+ .sidebar{overflow-y:auto;overscroll-behavior:contain;padding-bottom:0}
+ .sidebar nav{flex:0 0 auto;overflow:visible}
+ .sidebar-footer{max-height:none;overflow:visible;padding-bottom:calc(14px + env(safe-area-inset-bottom))}
+ .footer-links{grid-template-columns:1fr 1fr}
+ .footer-links a,.footer-links button{font-size:11px;padding:8px}
+ .order-steps{grid-template-columns:1fr 1fr}
+ .order-step-section{padding-top:16px;margin-top:16px}
+ .document-uploaders{grid-template-columns:1fr}
+ .contract-meta{grid-template-columns:1fr 1fr}
+ .document-row{flex-wrap:wrap}
+ .document-row>div{flex:1 1 calc(100% - 44px)}
+ .document-row .text-button{margin-left:42px}
+ .doc-viewer{max-height:48vh}
+ .doc-iframe,.doc-image-scroll{height:46vh}
+ .contract-panel,.contract-review-summary{padding:13px}
+ .record-card-actions .record-open{font-size:11px;min-height:44px;padding-top:12px}
+}
+@media(max-width:400px){
+ .order-steps li{font-size:9px;padding:5px 4px}
+ .contract-meta{grid-template-columns:1fr}
+ .footer-links{grid-template-columns:1fr}
+ .doc-preview-actions button{flex:1 1 calc(50% - 4px);justify-content:center}
+}

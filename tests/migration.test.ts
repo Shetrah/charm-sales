@@ -8,7 +8,7 @@ const admin='00000000-0000-4000-8000-000000000001', a='00000000-0000-4000-8000-0
 let keyCount=10;const key=()=>`10000000-0000-4000-8000-${String(keyCount++).padStart(12,'0')}`;
 async function scalar(sql:string,params:unknown[]=[]):Promise<any>{const r=await db.query(sql,params);return Object.values(r.rows[0]??{})[0];}
 async function asUser(id:string){await db.exec('reset role');await db.query("select set_config('request.jwt.claim.sub',$1,false)",[id]);await db.exec('set role authenticated');}
-async function createOrder(client:number,items:unknown[],requestKey=key()){const encoded=JSON.stringify(items);const id=await scalar('select charm.save_order_draft($1,null,$2,null,$3,\'retailer\')',[requestKey,client,encoded]);const path=`orders/${id}/${key()}.pdf`;await db.query("insert into storage.objects(bucket_id,name) values('charm-private',$1)",[path]);await db.query('select charm.attach_order_contract($1,$2)',[id,path]);await db.query('select charm.submit_order_draft($1)',[id]);return id;}
+async function createOrder(client:number,items:unknown[],requestKey=key()){const encoded=JSON.stringify(items);const id=await scalar('select charm.save_order_draft($1,null,$2,null,$3,\'retailer\')',[requestKey,client,encoded]);await db.query("select charm.save_order_contract($1,$2,$3,'Client signatory','Terms and conditions accepted by the client for this order.','retailer')",[key(),id,'CT-'+id]);const path=`orders/${id}/${key()}.pdf`;await db.query("insert into storage.objects(bucket_id,name) values('charm-private',$1)",[path]);await db.query("select charm.add_order_document($1,$2,'contract',$3,'signed-contract.pdf','application/pdf',2048,1)",[key(),id,path]);await db.query('select charm.submit_order_contract($1,$2,true)',[key(),id]);await db.query('select charm.submit_order_draft($1)',[id]);return id;}
 beforeAll(async()=>{
  await db.exec(`create role anon; create role authenticated; create role service_role bypassrls;
  create schema auth; create table auth.users(id uuid primary key,email text);
@@ -57,12 +57,44 @@ describe.sequential('Supabase PostgreSQL migration and permissions',()=>{
   await expect(db.query("select charm.save_order_draft($1,null,1,null,'[]','retailer')",[key()])).rejects.toThrow('invalid');
   await asUser(b);await expect(db.query("select charm.save_order_draft($1,null,1,null,$2,'retailer')",[k,items])).rejects.toThrow('duplicateConflict');
  });
+ it('refuses order submission without a complete, submitted and reviewed contract',async()=>{
+  await asUser(a);
+  const bare=await scalar("select charm.save_order_draft($1,null,1,null,$2,'retailer')",[key(),JSON.stringify([{product_id:1,quantity:1,unit:'bottle',unit_price:'1.00'}])]);
+  await expect(db.query('select charm.submit_order_contract($1,$2,true)',[key(),bare])).rejects.toThrow('contractIncomplete');
+  await db.query("select charm.save_order_contract($1,$2,'CT-BARE','Client signatory','Terms and conditions accepted by the client.','retailer')",[key(),bare]);
+  await expect(db.query('select charm.submit_order_contract($1,$2,false)',[key(),bare])).rejects.toThrow('contractConfirmationRequired');
+  await expect(db.query('select charm.submit_order_contract($1,$2,true)',[key(),bare])).rejects.toThrow('contractDocumentRequired');
+  await expect(db.query('select charm.submit_order_draft($1)',[bare])).rejects.toThrow('contractFormRequired');
+  const path=`orders/${bare}/${key()}.png`;
+  await db.query("insert into storage.objects(bucket_id,name) values('charm-private',$1)",[path]);
+  await db.query("select charm.add_order_document($1,$2,'contract',$3,'front-page.png','image/png',1024,1)",[key(),bare,path]);
+  await db.query('select charm.submit_order_contract($1,$2,true)',[key(),bare]);
+  expect(await scalar('select contract_status from charm.orders where id=$1',[bare])).toBe('submitted');
+  await db.query('select charm.submit_order_draft($1)',[bare]);
+  expect(await scalar('select status from charm.orders where id=$1',[bare])).toBe('pending');
+  await asUser(admin);
+  await expect(db.query('select charm.approve_order($1,true,null,false)',[bare])).rejects.toThrow('contractReviewRequired');
+  await db.query("select charm.approve_order($1,false,'Contract scan unreadable',false)",[bare]);
+  expect(await scalar('select contract_status from charm.orders where id=$1',[bare])).toBe('rejected');
+  await asUser(a);
+  await db.query('select charm.amend_order_contract($1,$2)',[bare,'Replace the unreadable contract scan']);
+  expect(await scalar('select contract_status from charm.orders where id=$1',[bare])).toBe('amendment_required');
+  const replacement=`orders/${bare}/${key()}.pdf`;
+  await db.query("insert into storage.objects(bucket_id,name) values('charm-private',$1)",[replacement]);
+  await db.query("select charm.add_order_document($1,$2,'contract',$3,'readable-contract.pdf','application/pdf',4096,2)",[key(),bare,replacement]);
+  await db.query('select charm.submit_order_contract($1,$2,true)',[key(),bare]);
+  expect(await scalar('select contract_version from charm.orders where id=$1',[bare])).toBe(2);
+  await expect(db.query("select charm.save_order_draft($1,$2,1,null,$3,'retailer')",[key(),bare,JSON.stringify([{product_id:1,quantity:1,unit:'bottle',unit_price:'1.00'}])])).rejects.toThrow('contractLocked');
+  expect(await scalar("select status from charm.order_contract_versions where order_id=$1 and version=1",[bare])).toBe('rejected');
+  expect(await scalar('select count(*)::int from charm.order_contract_versions where order_id=$1',[bare])).toBe(2);
+ });
  it('requires admin approval, counts pending as zero and records approvals atomically',async()=>{
   await asUser(a);const month=new Date().toISOString().slice(0,7)+'-01';
   expect((await scalar('select charm.monthly_summary($1)',[month])).monthly_sales).toBe('0.00');
   await expect(db.query('select charm.approve_order($1,true)',[order])).rejects.toThrow('forbidden');
-  await asUser(admin);await db.query('select charm.approve_order($1,true)',[order]);
-  await expect(db.query('select charm.approve_order($1,true)',[order])).rejects.toThrow('alreadyReviewed');
+  await asUser(admin);await expect(db.query('select charm.approve_order($1,true,null,false)',[order])).rejects.toThrow('contractReviewRequired');
+  await db.query('select charm.approve_order($1,true,null,true)',[order]);
+  await expect(db.query('select charm.approve_order($1,true,null,true)',[order])).rejects.toThrow('alreadyReviewed');
   expect(await scalar("select count(*)::int from charm.audit_logs where entity='orders' and action='confirmed'")).toBe(1);
  });
  it('pending payments leave balances unchanged and verified partial payments never increase sales',async()=>{
@@ -187,6 +219,34 @@ describe.sequential('Supabase PostgreSQL migration and permissions',()=>{
   await asUser(admin);await expect(db.query('select charm.override_visit_gps($1,-1.2,36.8,8,\'audit\')',[failed])).rejects.toThrow('notFound');
   const daily=await scalar("select charm.visit_report_summary((now() at time zone 'Africa/Nairobi')::date,(now() at time zone 'Africa/Nairobi')::date,null,null,null,'daily')");
   expect(daily[0].completed).toBe(4);expect(daily[0].pending_reports).toBe(0);expect(daily[0].outcomes['follow-up']).toBe(3);
+ });
+ it('builds traceable management reports with freshness, versions and narrative fallback',async()=>{
+  await asUser(a);
+  const visit=await scalar("select charm.start_visit($1,1,true,-1.2,36.8,9,'captured',null)",[key()]);
+  await db.query("select charm.submit_visit_report($1,$2,'Discussed quarterly supply','follow-up','Wants a larger pack','Bulk order opportunity','Send revised quotation',(now() at time zone 'Africa/Nairobi')::date+2,2)",[key(),visit]);
+  await expect(db.query("select charm.refresh_management_report('daily',(now() at time zone 'Africa/Nairobi')::date,null,null)")).rejects.toThrow('forbidden');
+  await asUser(admin);
+  const first=await scalar("select charm.refresh_management_report('daily',(now() at time zone 'Africa/Nairobi')::date,null,null)");
+  expect(first.cached).toBe(false);expect(first.report.version).toBe(1);expect(first.report.ai_status).toBe('pending');
+  expect(first.report.snapshot.totals.visits).toBeGreaterThan(0);
+  expect(first.report.snapshot.salespeople[0].outcomes['follow-up']).toBeGreaterThan(0);
+  const second=await scalar("select charm.refresh_management_report('daily',(now() at time zone 'Africa/Nairobi')::date,null,null)");
+  expect(second.cached).toBe(true);expect(second.report.version).toBe(1);
+  const narrative={executiveSummary:'Factual summary',salespersonActivity:'Activity',customerIntelligence:'Customers',commercialOutcomes:'Orders',followUpPlan:'Plan',managementInsights:'Insights'};
+  await expect(db.query("select charm.store_report_narrative($1,'{}'::jsonb,'test','template',null)",[first.report.id])).rejects.toThrow('invalid');
+  await db.query("select charm.store_report_narrative($1,$2::jsonb,'deterministic','template','AI provider not configured')",[first.report.id,JSON.stringify(narrative)]);
+  expect(await scalar('select ai_status from charm.management_reports where id=$1',[first.report.id])).toBe('template');
+  await asUser(a);
+  const fresh=await scalar("select charm.start_visit($1,1,true,-1.2,36.8,7,'captured',null)",[key()]);
+  await db.query("select charm.submit_visit_report($1,$2,'Second customer discussion','order','Approved trial order','Repeat order likely','Deliver next week',(now() at time zone 'Africa/Nairobi')::date+3,2)",[key(),fresh]);
+  await asUser(admin);
+  expect(await scalar('select is_stale from charm.management_reports where id=$1',[first.report.id])).toBe(true);
+  const third=await scalar("select charm.refresh_management_report('daily',(now() at time zone 'Africa/Nairobi')::date,null,null)");
+  expect(third.cached).toBe(false);expect(third.report.version).toBe(2);expect(third.report.ai_status).toBe('pending');
+  expect(await scalar('select is_stale from charm.management_reports where id=$1',[first.report.id])).toBe(false);
+  expect(await scalar('select count(*)::int from charm.management_report_versions where report_id=$1',[first.report.id])).toBe(1);
+  const weekly=await scalar("select charm.build_sales_report('weekly',(now() at time zone 'Africa/Nairobi')::date,null,null)");
+  expect(weekly.periodStart).toBeTruthy();expect(weekly.periodEnd).toBeTruthy();expect(weekly.previous.totals).toBeTruthy();
  });
  it('deactivates and reactivates staff without changing ownership or financial history',async()=>{
   await asUser(admin);await db.query("select charm.manage_staff(2,'deactivate')");

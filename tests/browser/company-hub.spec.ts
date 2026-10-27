@@ -4,10 +4,10 @@ async function login(page:Page,email:string,password='test-password-123'){
 }
 async function logout(page:Page){
  if(await page.locator('.mobile-menu').isVisible()&&!await page.locator('.sidebar').evaluate(el=>el.classList.contains('open')))await page.locator('.mobile-menu').click();
- await page.locator('.sidebar-footer').getByRole('button').click();
+ await page.locator('.sidebar-footer').getByRole('button',{name:'Sign out',exact:true}).click();
 }
 test('each role reaches its portal and only Admin can choose every portal',async({page})=>{
- await login(page,'admin@test.invalid');await expect(page).toHaveURL(/\/admin$/);await expect(page.locator('.portal-grid a')).toHaveCount(3);
+ await login(page,'admin@test.invalid');await expect(page).toHaveURL(/\/admin$/);await expect(page.locator('.portal-grid a')).toHaveCount(4);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  await page.screenshot({path:`tests/.artifacts/company-hub-${test.info().project.name}.png`,fullPage:true});
  await page.getByRole('link',{name:'Finance portal',exact:true}).click();await expect(page.locator('main h1')).toHaveText('Finance dashboard');
@@ -27,8 +27,8 @@ test('Admin adds staff with a temporary password and staff can change it',async(
  const context=await browser.newContext(),staff=await context.newPage();
  try{
   await login(staff,'new-finance@test.invalid','temporary-test-password');await expect(staff).toHaveURL(/\/finance$/);
-  await staff.locator('.sidebar-footer').getByRole('link',{name:'Update password'}).click();await expect(staff.locator('main h1')).toHaveText('Update password');
+  await staff.locator('.sidebar-footer').getByRole('link',{name:'Account settings',exact:true}).click();await expect(staff.locator('main h1')).toHaveText('Update password');
   await staff.locator('input[type=password]').fill('updated-test-password');await staff.getByRole('button',{name:'Update password',exact:true}).click();await expect(staff).toHaveURL(/\/finance$/);
-  await staff.locator('.sidebar-footer').getByRole('button').click();await login(staff,'new-finance@test.invalid','updated-test-password');await expect(staff).toHaveURL(/\/finance$/);
+  await staff.locator('.sidebar-footer').getByRole('button',{name:'Sign out',exact:true}).click();await login(staff,'new-finance@test.invalid','updated-test-password');await expect(staff).toHaveURL(/\/finance$/);
  }finally{await context.close();}
 });

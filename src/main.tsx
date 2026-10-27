@@ -5,5 +5,8 @@ import { BrowserRouter } from 'react-router-dom';
 import { PreferencesProvider } from './i18n';
 import App from './App';
 import './styles.css';
+import './contract.css';
+import './reports.css';
 const queryClient=new QueryClient({defaultOptions:{queries:{staleTime:20000,retry:1,refetchOnWindowFocus:true}}});
+if('serviceWorker' in navigator&&import.meta.env.PROD)window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').catch(()=>{});});
 ReactDOM.createRoot(document.getElementById('root')!).render(<React.StrictMode><QueryClientProvider client={queryClient}><PreferencesProvider><BrowserRouter><App/></BrowserRouter></PreferencesProvider></QueryClientProvider></React.StrictMode>);

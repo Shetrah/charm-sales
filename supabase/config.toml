@@ -10,3 +10,7 @@ enable_signup = false
 [functions.add-staff]
 # The function validates bearer tokens with Auth getUser and database roles.
 verify_jwt = false
+
+[functions.report-ai]
+# The function validates the caller JWT and admin role against the charm schema.
+verify_jwt = false

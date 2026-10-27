@@ -12,7 +12,7 @@ function setup({admin=true,existing=false,linkError=false,alreadyLinked=false}={
  const createClient=(_url:string,key:string)=>key==='service'?service:caller;
  const env={SUPABASE_URL:'https://test.invalid',SUPABASE_ANON_KEY:'public',SUPABASE_SERVICE_ROLE_KEY:'service'};
  const Deno={env:{get:(name:string)=>env[name as keyof typeof env]},serve:(fn:typeof handler)=>{handler=fn;}};
- const source=ts.transpileModule(readFileSync('supabase/functions/add-staff/index.ts','utf8').replace(/^import.*\n/,''),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.None}}).outputText;
+ const source=ts.transpileModule(readFileSync('supabase/functions/add-staff/index.ts','utf8').replace(/^import[^\n]*\n/,''),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.None}}).outputText;
  new Function('createClient','Deno',source)(createClient,Deno);
  const send=(body:unknown,origin='https://charm-sales.vercel.app',token='test-token')=>handler(new Request('https://test.invalid/functions/v1/add-staff',{method:'POST',headers:{origin,authorization:token?`Bearer ${token}`:'','content-type':'application/json'},body:JSON.stringify(body)}));
  return {send,createUser,deleteUser,rpc};

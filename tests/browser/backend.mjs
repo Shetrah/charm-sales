@@ -57,7 +57,7 @@ createServer((req,res)=>{queue=queue.then(async()=>{
    const sql=`select charm.${fn}(${keys.map((k,i)=>`${k} => $${i+1}`).join(',')}) as result`;
    const data=await db.query(sql,params);send(200,data.rows[0].result);return;
   }
-  const table=url.pathname.split('/').pop();if(!['users','team_directory','clients','products','orders','order_items','payments','order_balances','visits','visit_exceptions','plans','expenses','reports','workdays','location_points','audit_logs','finance_notifications','finance_requests'].includes(table))throw Error('invalid');
+  const table=url.pathname.split('/').pop();if(!['users','team_directory','clients','products','orders','order_items','order_documents','order_contract_versions','payments','order_balances','visits','visit_exceptions','plans','expenses','reports','workdays','location_points','audit_logs','finance_notifications','finance_requests','management_reports','management_report_versions'].includes(table))throw Error('invalid');
   const columns=url.searchParams.get('select')??'*';if(!/^[a-z_,*]+$/.test(columns))throw Error('invalid');
   const params=[],conditions=[];
   for(const [k,v] of url.searchParams.entries())if(!['select','order','offset','limit','or'].includes(k)){

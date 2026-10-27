@@ -2,21 +2,22 @@ import { test, expect } from '@playwright/test';
 test('direct routes, English/Chinese and both themes persist without horizontal overflow',async({page})=>{
  await page.goto('/orders');
  await expect(page.getByRole('heading',{name:'Company Hub',exact:true})).toBeVisible();
- await page.getByRole('button',{name:'English / 简体中文'}).click();
+ await page.locator('.preferences').getByRole('button',{name:'English / 简体中文',exact:true}).click();
  await expect(page.getByRole('heading',{name:'公司管理中心',exact:true})).toBeVisible();
  await expect(page.getByRole('button',{name:'登录',exact:true})).toBeVisible();
  await page.getByRole('button',{name:'登录',exact:true}).click();
  await expect(page.getByRole('alert')).toHaveText('请检查填写内容并重试。');
- await page.getByRole('button',{name:'深色模式'}).click();
  await expect(page.locator('html')).toHaveAttribute('data-theme','dark');
+ await page.locator('.preferences').getByRole('button',{name:'浅色模式',exact:true}).click();
+ await expect(page.locator('html')).toHaveAttribute('data-theme','light');
  await page.reload();
  await expect(page.locator('html')).toHaveAttribute('lang','zh-CN');
- await expect(page.locator('html')).toHaveAttribute('data-theme','dark');
- expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
- await page.getByRole('button',{name:'浅色模式'}).click();
  await expect(page.locator('html')).toHaveAttribute('data-theme','light');
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+ await page.locator('.preferences').getByRole('button',{name:'深色模式',exact:true}).click();
+ await expect(page.locator('html')).toHaveAttribute('data-theme','dark');
  await page.screenshot({path:`tests/.artifacts/login-${test.info().project.name}.png`,fullPage:true});
- await page.getByRole('button',{name:'English / 简体中文'}).click();
+ await page.locator('.preferences').getByRole('button',{name:'简体中文 / English',exact:true}).click();
  await expect(page.getByRole('heading',{name:'Company Hub',exact:true})).toBeVisible();
 });
 test('supports reduced motion and includes the original company favicon',async({page})=>{
