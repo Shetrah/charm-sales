@@ -3,11 +3,13 @@ import { financeWords } from './financeWords';
 import { contractWords } from './contractWords';
 import { reportWords } from './reportWords';
 import { shellWords } from './shellWords';
+import { fieldWords } from './fieldWords';
 const words = {
  ...financeWords,
  ...contractWords,
  ...reportWords,
  ...shellWords,
+ ...fieldWords,
  staffLifecycleSetup:['Team management requires the reviewed staff lifecycle migration 009 in this Supabase project. Apply it after migration 008, then refresh.','此 Supabase 项目需要应用审核后的员工生命周期迁移 009，才能管理团队。请在迁移 008 后应用，然后刷新。'],
  deactivateStaff:['Make inactive','停用员工'],reactivateStaff:['Reactivate staff','重新启用员工'],deleteStaff:['Delete staff','删除员工'],confirmStaffAction:['Confirm staff change','确认员工状态变更'],deleteStaffHint:['Remove this person from the Team directory and block portal access. Their staff ID, clients, orders, payments and audit history are preserved. Existing clients can be reassigned separately.','将此员工从团队目录移除并阻止门户访问。员工编号、客户、订单、收款和审计历史将保留。现有客户可另行重新分配。'],deactivateStaffHint:['Block this person’s portal access while keeping them in the Team directory. You can reactivate them later.','阻止此员工访问门户，但保留其团队目录记录。以后可重新启用。'],reactivateStaffHint:['Restore this person’s portal access with their existing role and records.','以现有角色和记录恢复此员工的门户访问权限。'],cannotManageSelf:['You cannot deactivate or delete your own account.','您不能停用或删除自己的账户。'],staffDeleted:['This staff member has been removed. Deleted staff cannot be reactivated through profile editing.','此员工已移除。不能通过编辑档案重新启用已删除员工。'],staffDeactivated:['Staff made inactive','员工已停用'],staffReactivated:['Staff reactivated','员工已重新启用'],
  addStaff:['Add staff','添加员工'],addStaffHint:['Create a staff account with a temporary password. Share it directly with the staff member, who can change it after signing in. Existing company records are preserved.','创建员工账号及临时密码。请直接交给员工，员工登录后可更改密码。保留现有公司记录。'],

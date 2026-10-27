@@ -1,6 +1,6 @@
 import {test,expect} from '@playwright/test';
 const widths=[320,360,375,390,414,430,768,1024,1280];
-const routes:[string,boolean][]=[['dashboard',true],['clients',true],['orders',true],['payments',true],['visits',true],['reporting',true],['production',false],['staff',true],['audit',true],['finance',true],['finance/requests',true],['finance/accounts',true]];
+const routes:[string,boolean][]=[['dashboard',true],['clients',true],['orders',true],['payments',true],['visits',true],['field',true],['field?tab=requests',true],['reporting',true],['production',false],['staff',true],['audit',true],['finance',true],['finance/requests',true],['finance/accounts',true]];
 test.describe('responsive sweep',()=>{
  test.skip(({isMobile})=>isMobile,'One viewport sweep covers the required widths; tablet and mobile projects cover their own layouts.');
  test('every supported width keeps routes, drawer and dialogs usable',async({page})=>{

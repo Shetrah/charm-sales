@@ -24,6 +24,10 @@ export async function workload() {
  const today=nairobiDate();
  const pending=['orders','payments','plans','expenses','reports'];
  const counts=await Promise.all(pending.map(async table=>{
+  if(table==='expenses'){
+   const states=await Promise.all(['pending','pending_approval','finance_review'].map(async status=>{const {count,error}=await supabase!.from(table).select('id',{count:'exact',head:true}).eq('status',status);if(error)throw databaseError(error);return count??0;}));
+   return [table,states.reduce((sum,value)=>sum+value,0)] as const;
+  }
   const {count,error}=await supabase!.from(table).select('id',{count:'exact',head:true}).eq('status','pending');
   if(error)throw databaseError(error);return [table,count??0] as const;
  }));

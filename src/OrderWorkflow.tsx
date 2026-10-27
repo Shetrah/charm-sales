@@ -8,6 +8,7 @@ import { Dialog, ErrorNotice, Field, Lookup, Loading, Status } from './component
 import { usePreferences } from './i18n';
 import { rpc, supabase } from './lib/supabase';
 import { type Profile, type Row } from './lib/data';
+import { formatBusinessDateTime } from './lib/dates';
 import { cents, decimal, lineTotal } from './lib/money';
 import {
   documentExtension, formatBytes, openPrivateFile, prepareDocument, uploadPrivate, validateDocument,
@@ -27,7 +28,7 @@ type PendingUpload = {
   stage:'preparing'|'uploading'|'saving'|'error';progress:number;error?:unknown;
 };
 
-const stamp=(value:string|null|undefined,language:'en'|'zh')=>value?new Intl.DateTimeFormat(language==='zh'?'zh-CN':'en-KE',{timeZone:'Africa/Nairobi',dateStyle:'medium',timeStyle:'short'}).format(new Date(value)):'—';
+const stamp=(value:string|null|undefined,language:'en'|'zh')=>formatBusinessDateTime(value,language);
 const mimeLabel=(mime:string)=>mime==='application/pdf'?'PDF':mime==='image/png'?'PNG':mime==='image/webp'?'WebP':'JPEG';
 export const contractStatusKey=(status:string)=>status==='submitted'?'contractSubmitted':status==='approved'?'contractApproved':status==='rejected'?'contractRejected':status==='amendment_required'?'contractAmendmentRequired':status==='superseded'?'contractSuperseded':'contractDraft';
 
