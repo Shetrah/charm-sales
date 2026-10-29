@@ -1,0 +1,20 @@
+/* Global search centre: header trigger and grouped, role-scoped results. */
+.search-trigger{color:var(--muted)}
+.search-trigger:hover{color:var(--purple)}
+.search-centre{display:flex;flex-direction:column;gap:14px;min-height:200px}
+.search-centre input[type=search]{width:100%;min-height:48px;font-size:16px}
+.search-groups{display:flex;flex-direction:column;gap:18px}
+.search-group>h3{display:flex;align-items:center;gap:7px;margin:0 0 9px;font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted)}
+.search-group>h3 svg{color:var(--teal)}
+.search-group>h3 span{margin-left:auto;min-width:20px;height:18px;padding:0 6px;display:inline-grid;place-items:center;border-radius:999px;background:var(--soft);color:var(--purple);font-size:9px;font-weight:700;font-variant-numeric:tabular-nums}
+.search-group>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.search-hit{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:11px 13px;border:1px solid var(--border);border-radius:11px;background:var(--bg);min-width:0}
+.search-hit:hover{border-color:color-mix(in srgb,var(--teal) 35%,var(--border));transform:none}
+.search-hit>div{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.search-hit strong{font-size:12px;line-height:1.45;overflow-wrap:anywhere}
+.search-hit small{font-size:10px;line-height:1.5;overflow-wrap:anywhere}
+.search-hit>svg{flex:0 0 auto;color:var(--purple)}
+@media(max-width:760px){
+ .search-centre{min-height:160px}
+ .search-group>div{grid-template-columns:1fr}
+}

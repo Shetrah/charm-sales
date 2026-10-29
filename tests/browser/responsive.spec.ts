@@ -39,6 +39,7 @@ test.describe('responsive sweep',()=>{
    await page.getByRole('button',{name:'Create record',exact:true}).click();
    const dialog=page.getByRole('dialog');
    await expect(dialog).toBeVisible();
+   await dialog.evaluate(el=>Promise.all(el.getAnimations().map(animation=>animation.finished)));
    const box=await dialog.boundingBox();
    expect(box!.width,`dialog fit at ${width}px`).toBeLessThanOrEqual(width);
    expect(box!.height,`dialog height at ${width}px`).toBeLessThanOrEqual(821);

@@ -54,10 +54,13 @@ createServer((req,res)=>{queue=queue.then(async()=>{
    const fn=url.pathname.split('/').pop();if(!/^[a-z_]+$/.test(fn))throw Error('invalid');
    const keys=Object.keys(body);if(keys.some(k=>!/^p_[a-z_]+$/.test(k)))throw Error('invalid');
    const params=keys.map(k=>typeof body[k]==='object'&&body[k]!==null?JSON.stringify(body[k]):body[k]);
-   const sql=`select charm.${fn}(${keys.map((k,i)=>`${k} => $${i+1}`).join(',')}) as result`;
-   const data=await db.query(sql,params);send(200,data.rows[0].result);return;
+   const args=keys.map((k,i)=>`${k} => $${i+1}`).join(',');
+   const listed=['product_price_book','product_price_history','sales_atp','sales_credit_status'].includes(fn);
+   if(listed){const rows=await db.query(`select * from charm.${fn}(${args})`,params);send(200,rows.rows);return;}
+   const data=await db.query(`select charm.${fn}(${args}) as result`,params);
+   send(200,data.rows[0].result);return;
   }
-  const table=url.pathname.split('/').pop();if(!['users','team_directory','clients','products','orders','order_items','order_documents','order_contract_versions','payments','order_balances','visits','visit_exceptions','plans','plan_stops','expenses','travel_request_items','travel_request_documents','travel_policy','reports','workdays','location_points','audit_logs','finance_notifications','finance_requests','finance_disbursements','management_reports','management_report_versions'].includes(table))throw Error('invalid');
+  const table=url.pathname.split('/').pop();if(!['users','team_directory','clients','products','product_prices','quotation_batches','quotation_rows','orders','order_items','order_documents','order_contract_versions','payments','order_balances','visits','visit_exceptions','plans','plan_stops','expenses','travel_request_items','travel_request_documents','travel_policy','reports','workdays','location_points','audit_logs','finance_notifications','finance_requests','finance_disbursements','management_reports','management_report_versions','attendance_policy','attendance_days','leave_types','leave_requests','client_assignments','commission_rules','commission_tiers','commission_entries','sales_deliveries','sales_delivery_items'].includes(table))throw Error('invalid');
   const columns=url.searchParams.get('select')??'*';if(!/^[a-z_,*]+$/.test(columns))throw Error('invalid');
   const params=[],conditions=[];
   for(const [k,v] of url.searchParams.entries())if(!['select','order','offset','limit','or'].includes(k)){

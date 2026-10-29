@@ -1,0 +1,80 @@
+/* Order logistics: dispatch board, delivery note and finished-goods ledger. */
+.badge.planned{background:#448bdf15;color:#448bdf}
+.badge.dispatched{background:#d78d1615;color:#b98219}
+.badge.delivered{background:#099d9615;color:var(--teal)}
+.badge.failed{background:#d4526815;color:#d45268}
+.logistics-kpis{margin-bottom:18px}
+.logistics-kpis .field-card small{min-height:15px}
+.logistics-ready>header .badge{font-variant-numeric:tabular-nums}
+.logistics-ready-row{align-items:center}
+.logistics-ready-row>button{flex:0 0 auto;font-size:11px;padding:8px 11px;min-height:36px}
+.field-list-card>header select{max-width:170px;font-size:11px;padding:8px 10px}
+.logistics-board{gap:14px}
+.logistics-card{background:var(--bg)}
+.logistics-card .eyebrow{color:var(--muted);letter-spacing:1px}
+.logistics-card .field-record-actions button{display:inline-flex;align-items:center;gap:6px;justify-content:center}
+.logistics-card .field-record-actions .text-button{padding-left:2px}
+.logistics-ledger{display:flex;flex-direction:column;gap:8px}
+.logistics-ledger-row{display:grid;grid-template-columns:minmax(96px,auto) minmax(0,1fr) auto;gap:6px 14px;align-items:center;padding:11px 13px;border:1px solid var(--border);border-radius:11px;background:var(--bg);min-width:0}
+.logistics-ledger-row>.badge{justify-self:start}
+.logistics-ledger-row>div{display:flex;flex-direction:column;gap:3px;min-width:0}
+.logistics-ledger-row strong{font-size:12px;overflow-wrap:anywhere}
+.logistics-ledger-row small{font-size:10px;line-height:1.5;overflow-wrap:anywhere}
+.logistics-ledger-row>.positive,.logistics-ledger-row>.negative{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.logistics-ledger-row>.positive{color:var(--teal)}
+.logistics-ledger-row>.negative{color:#b98219}
+.logistics-ledger-row>.positive small,.logistics-ledger-row>.negative small{display:block;font-size:9px;font-weight:500;color:var(--muted)}
+.logistics-ledger-row>time{grid-column:2/-1;font-size:10px;color:var(--muted)}
+.delivery-note{display:flex;flex-direction:column;gap:16px;font-size:12px;color:var(--text)}
+.delivery-note>header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.delivery-note>header h3{margin:4px 0 6px;font-size:19px}
+.delivery-note>header strong{font-size:13px;letter-spacing:.4px}
+.delivery-note-meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 14px;margin:0}
+.delivery-note-meta>div{min-width:0}
+.delivery-note-meta dt{font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:4px}
+.delivery-note-meta dd{margin:0;font-size:12px;overflow-wrap:anywhere}
+.delivery-note-table{overflow-x:auto;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:10px}
+.delivery-note-table table{min-width:480px;font-size:11px}
+.delivery-note-table th{padding:9px 11px}
+.delivery-note-table td{padding:10px 11px;max-width:none;vertical-align:top}
+.delivery-note-table td small{display:block;font-size:9px;margin-top:2px}
+.delivery-note-totals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.delivery-note-totals>div{display:flex;flex-direction:column;gap:4px;padding:11px 13px;border:1px solid var(--border);border-radius:10px;background:var(--bg);min-width:0}
+.delivery-note-totals span{font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+.delivery-note-totals strong{font-size:14px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.delivery-note-totals small{font-size:10px;line-height:1.5}
+.delivery-note-credits{padding:11px 13px;border:1px solid #d78d1640;border-radius:10px;background:#d78d1610}
+.delivery-note-credits h4{margin:0 0 6px;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:#a97514}
+.delivery-note-credits p{margin:0;font-size:11px;line-height:1.6;color:var(--text)}
+.delivery-note-sign{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:4px}
+.delivery-note-sign>div{display:flex;flex-direction:column;gap:14px}
+.delivery-note-sign span{font-size:10px;color:var(--muted)}
+.delivery-note-sign i{display:block;border-bottom:1px solid var(--border)}
+.delivery-note-actions{flex-wrap:wrap}
+@media(max-width:760px){
+ .logistics-kpis{margin-bottom:14px}
+ .logistics-ledger-row{grid-template-columns:minmax(0,1fr) auto}
+ .logistics-ledger-row>.badge{grid-column:1/-1;justify-self:start}
+ .logistics-ledger-row>time{grid-column:1/-1}
+ .delivery-note-meta{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:430px){
+ .logistics-ready-row>button{width:100%}
+ .logistics-ready-row>div{width:100%}
+ .delivery-note-meta,.delivery-note-totals,.delivery-note-sign{grid-template-columns:1fr}
+}
+@media print{
+ body *{visibility:hidden}
+ dialog[open],dialog[open] *{visibility:visible}
+ dialog[open]{position:absolute;inset:0;width:100%;max-width:100%;max-height:none;height:auto;margin:0;border:0;border-radius:0;box-shadow:none;padding:0;background:#fff;color:#111}
+ dialog[open]::backdrop{display:none}
+ dialog[open] .dialog-head,dialog[open] .delivery-note-actions{display:none}
+ dialog[open] .dialog-body{overflow:visible;padding:24px;background:#fff}
+ .delivery-note{color:#111}
+ .delivery-note .field-note,.delivery-note-meta dt,.delivery-note-totals span{color:#555}
+ .delivery-note-table table{min-width:0}
+ .delivery-note-table{border-color:#bbb}
+ .delivery-note-table th{background:#f3f3f3;color:#333}
+ .delivery-note-table td,.delivery-note>header{border-color:#bbb}
+ .delivery-note-totals>div,.delivery-note-credits{border-color:#bbb;background:#fafafa}
+}

@@ -12,12 +12,16 @@ async function submitContract(page:Page,reference:string,file:string){
  await page.getByRole('button',{name:'Confirm and submit contract',exact:true}).click();
  await expect(page.getByRole('status').filter({hasText:'Contract submitted. Submit the order as a separate step'})).toBeVisible();
 }
+async function signIn(page:Page,email:string){
+ await page.getByLabel('Email address').fill(email);await page.getByLabel('Password',{exact:true}).fill('test-password-123');await page.getByRole('button',{name:'Sign in',exact:true}).click();
+ await expect(page.locator('.sidebar-footer')).toBeVisible();
+}
 test('connected workspace, every direct route, translated tables and mobile navigation',async({page})=>{
  await page.goto('/');
- await page.getByLabel('Email address').fill('admin@test.invalid');await page.getByLabel('Password',{exact:true}).fill('test-password-123');await page.getByRole('button',{name:'Sign in',exact:true}).click();
+ await signIn(page,'admin@test.invalid');
  await expect(page.getByRole('heading',{name:'Admin portal',exact:true,level:1})).toBeVisible();await page.goto('/dashboard');await expect(page.getByRole('heading',{name:'Overview',exact:true})).toBeVisible();
  await expect(page.locator('.team-ranking').getByText('Test Salesperson',{exact:true})).toBeVisible();
- for(const route of ['clients','products','orders','payments','balances','visits','plans','expenses','reports','reporting','routes','staff','audit']){
+ for(const route of ['clients','products','orders','payments','balances','visits','plans','expenses','reports','reporting','routes','staff','audit','logistics']){
   await page.goto('/'+route);await expect(page.locator('main h1')).toBeVisible();await expect(page.getByRole('alert')).toHaveCount(0);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
  }
@@ -27,15 +31,14 @@ test('connected workspace, every direct route, translated tables and mobile navi
  await expect(page.locator(test.info().project.name==='mobile'?'.record-cards':'.desktop-records').getByText('Integration Client',{exact:true})).toBeVisible();
  await page.getByRole('button',{name:'新建记录',exact:true}).click();await page.getByRole('button',{name:'保存',exact:true}).click();
  await expect(page.getByRole('dialog').getByRole('alert')).toHaveText('请检查填写内容并重试。');await page.getByRole('button',{name:'取消',exact:true}).click();
- for(const [route,title] of Object.entries({clients:'客户',products:'产品目录',orders:'订单',payments:'收款',balances:'余额',visits:'Client Visits',plans:'行程计划',expenses:'差旅申请',reports:'每日报告',reporting:'管理报告',routes:'每日路线',staff:'团队',audit:'审计记录'})){
+ for(const [route,title] of Object.entries({clients:'客户',products:'产品目录',orders:'订单',payments:'收款',balances:'余额',visits:'Client Visits',plans:'行程计划',expenses:'差旅申请',reports:'每日报告',reporting:'管理报告',routes:'每日路线',staff:'团队',audit:'审计记录',logistics:'订单物流'})){
   await page.goto('/'+route);await expect(page.locator('main h1')).toHaveText(title);await expect(page.getByRole('alert')).toHaveCount(0);
  }
  await page.goto('/clients');
  await page.screenshot({path:`tests/.artifacts/workspace-${test.info().project.name}.png`,fullPage:true});
 });
 test('team cards, complete staff profile and secure editing work on every screen size',async({page})=>{
- await page.goto('/staff');await page.getByLabel('Email address').fill('admin@test.invalid');await page.getByLabel('Password',{exact:true}).fill('test-password-123');await page.getByRole('button',{name:'Sign in',exact:true}).click();
- await page.goto('/staff');await expect(page.locator('.person-card').filter({hasText:'Test Salesperson'})).toHaveCount(1);
+ await page.goto('/staff');await signIn(page,'admin@test.invalid');await page.goto('/staff');await expect(page.locator('.person-card').filter({hasText:'Test Salesperson'})).toHaveCount(1);
  await page.locator('.person-card').filter({hasText:'Test Salesperson'}).getByRole('button',{name:'View details',exact:true}).click();
  await expect(page.getByRole('dialog')).toBeVisible();await expect(page.getByText('All-time confirmed sales',{exact:true})).toBeVisible();
  await page.getByRole('button',{name:'Edit staff information',exact:true}).last().click();
@@ -50,7 +53,7 @@ test('team cards, complete staff profile and secure editing work on every screen
 test.describe('desktop transaction and field workflows',()=>{
  test.skip(({isMobile})=>isMobile,'Desktop transaction coverage; responsive views are tested separately.');
 test('admin can deactivate, reactivate and delete staff through confirmed controls',async({page})=>{
- await page.goto('/staff');await page.getByLabel('Email address').fill('admin@test.invalid');await page.getByLabel('Password',{exact:true}).fill('test-password-123');await page.getByRole('button',{name:'Sign in',exact:true}).click();await expect(page.locator('.sidebar-footer')).toBeVisible();await page.goto('/staff');
+ await page.goto('/staff');await signIn(page,'admin@test.invalid');await page.goto('/staff');
  await page.locator('.person-card').filter({hasText:'Test Removable'}).getByRole('button',{name:'View details',exact:true}).click();
  const dialog=page.getByRole('dialog');await dialog.getByRole('button',{name:'Make inactive',exact:true}).click();await dialog.getByRole('button',{name:'Make inactive',exact:true}).click();await expect(dialog.locator('.profile-badges')).toContainText('Inactive');
  await dialog.getByRole('button',{name:'Reactivate staff',exact:true}).click();await dialog.getByRole('button',{name:'Reactivate staff',exact:true}).click();await expect(dialog.locator('.profile-badges')).toContainText('Active');
@@ -58,9 +61,9 @@ test('admin can deactivate, reactivate and delete staff through confirmed contro
  await dialog.getByRole('button',{name:'Delete staff',exact:true}).click();await dialog.getByRole('button',{name:'Delete staff',exact:true}).click();await expect(page.locator('dialog')).toHaveCount(0);await expect(page.locator('.person-card').filter({hasText:'Test Removable'})).toHaveCount(0);
 });
 test('an already-open admin page receives a new salesperson submission without a reload',async({page,browser})=>{
- await page.goto('/orders');await page.getByLabel('Email address').fill('admin@test.invalid');await page.getByLabel('Password',{exact:true}).fill('test-password-123');await page.getByRole('button',{name:'Sign in',exact:true}).click();await page.goto('/orders');await expect(page.locator('main h1')).toHaveText('Orders');
+ await page.goto('/orders');await signIn(page,'admin@test.invalid');await page.goto('/orders');await expect(page.locator('main h1')).toHaveText('Orders');
  const context=await browser.newContext();try{
-  const sales=await context.newPage();await sales.goto('http://127.0.0.1:5174/orders');await sales.getByLabel('Email address').fill('sales@test.invalid');await sales.getByLabel('Password',{exact:true}).fill('test-password-123');await sales.getByRole('button',{name:'Sign in',exact:true}).click();await sales.goto('http://127.0.0.1:5174/orders');await sales.getByRole('button',{name:'Create record',exact:true}).click();
+  const sales=await context.newPage();await sales.goto('http://127.0.0.1:5174/orders');await signIn(sales,'sales@test.invalid');await sales.goto('http://127.0.0.1:5174/orders');await sales.getByRole('button',{name:'Create record',exact:true}).click();
   await sales.getByRole('combobox',{name:'Find a client'}).selectOption({label:'Integration Client'});await sales.getByRole('combobox',{name:'Find a product variant'}).selectOption({index:1});await sales.getByLabel('Price per selected unit (KES)',{exact:true}).fill('7.25');
   await submitContract(sales,'CT-LIVE-1','live-contract.pdf');
   await sales.getByRole('button',{name:'Submit order for approval',exact:true}).click();await expect(sales.locator('dialog')).toHaveCount(0);
@@ -70,7 +73,7 @@ test('an already-open admin page receives a new salesperson submission without a
 test('visit consent, GPS check-in and mandatory report close work and route logging is blocked outside visits',async({page,context})=>{
  await context.grantPermissions(['geolocation']);await context.setGeolocation({latitude:-1.286389,longitude:36.817223,accuracy:12});
  await page.addInitScript(()=>{navigator.geolocation.getCurrentPosition=success=>success({coords:{latitude:-1.286389,longitude:36.817223,accuracy:12,altitude:null,altitudeAccuracy:null,heading:null,speed:null},timestamp:Date.now()} as GeolocationPosition);});
- await page.goto('/visits');await page.getByLabel('Email address').fill('sales@test.invalid');await page.getByLabel('Password',{exact:true}).fill('test-password-123');await page.getByRole('button',{name:'Sign in',exact:true}).click();
+ await page.goto('/visits');await signIn(page,'sales@test.invalid');
  await page.goto('/visits');await page.getByRole('button',{name:'Check in',exact:true}).click();
  await page.getByRole('combobox',{name:'Choose client'}).selectOption({label:'Integration Client'});
  await page.getByRole('checkbox').check();await page.getByRole('button',{name:'Check in',exact:true}).last().click();await expect(page.locator('dialog')).toHaveCount(0);
@@ -91,8 +94,8 @@ test('visit consent, GPS check-in and mandatory report close work and route logg
  await page.getByRole('button',{name:'End workday',exact:true}).click();await expect(page.getByRole('heading',{name:'Tracking status: Workday ended',exact:true})).toBeVisible();
 });
 test('salesperson submits an exact multi-line order through the connected application',async({page})=>{
- test.setTimeout(60000);
- await page.goto('/orders');await page.getByLabel('Email address').fill('sales@test.invalid');await page.getByLabel('Password',{exact:true}).fill('test-password-123');await page.getByRole('button',{name:'Sign in',exact:true}).click();
+ test.setTimeout(90000);
+ await page.goto('/orders');await signIn(page,'sales@test.invalid');
  await page.goto('/orders');await expect(page.locator('main h1')).toHaveText('Orders');
  await page.getByRole('button',{name:'Create record',exact:true}).click();
  await page.getByRole('combobox',{name:'Find a client'}).selectOption({label:'Integration Client'});
@@ -108,23 +111,52 @@ test('salesperson submits an exact multi-line order through the connected applic
  await expect(page.getByRole('button',{name:'Confirm order',exact:true})).toHaveCount(0);
  await page.goto('/staff');await expect(page.locator('main h1')).toHaveText('Overview');
  await page.getByRole('button',{name:'Sign out',exact:true}).click();
- await page.getByLabel('Email address').fill('admin@test.invalid');await page.getByLabel('Password',{exact:true}).fill('test-password-123');await page.getByRole('button',{name:'Sign in',exact:true}).click();
+ await signIn(page,'admin@test.invalid');
  await page.goto('/orders');await page.getByRole('row').filter({has:page.getByRole('cell',{name:'49.30',exact:true})}).getByRole('button',{name:'Confirm order',exact:true}).click();
  await page.getByLabel('I have reviewed the submitted contract and supporting documents.').check();
  await page.getByRole('dialog').getByRole('button',{name:'Confirm order',exact:true}).click();
  await expect(page.locator('dialog')).toHaveCount(0);await expect(page.getByRole('cell',{name:'Confirmed',exact:true})).toBeVisible();
  await page.getByRole('button',{name:'Sign out',exact:true}).click();
- await page.getByLabel('Email address').fill('sales@test.invalid');await page.getByLabel('Password',{exact:true}).fill('test-password-123');await page.getByRole('button',{name:'Sign in',exact:true}).click();
+ await signIn(page,'sales@test.invalid');
  await page.goto('/payments');await page.getByRole('button',{name:'Create record',exact:true}).click();
  await page.getByRole('combobox',{name:'Find a confirmed order'}).selectOption({index:1});
  await page.getByLabel('Amount (KES)',{exact:true}).fill('10.00');await page.getByLabel('Payment reference',{exact:true}).fill('BROWSER-REF');
  await page.getByRole('button',{name:'Save',exact:true}).click();await expect(page.locator('dialog')).toHaveCount(0);
  await page.goto('/balances');await expect(page.getByRole('cell',{name:'49.30',exact:true}).last()).toBeVisible();
  await page.getByRole('button',{name:'Sign out',exact:true}).click();
- await page.getByLabel('Email address').fill('admin@test.invalid');await page.getByLabel('Password',{exact:true}).fill('test-password-123');await page.getByRole('button',{name:'Sign in',exact:true}).click();
+ await signIn(page,'admin@test.invalid');
  await page.goto('/payments');await page.getByRole('button',{name:'Verify payment',exact:true}).click();
  await page.getByRole('dialog').getByRole('button',{name:'Verify payment',exact:true}).click();await expect(page.locator('dialog')).toHaveCount(0);
  await page.goto('/balances');await expect(page.getByRole('cell',{name:'39.30',exact:true})).toBeVisible();
+ await page.goto('/logistics');await expect(page.locator('main h1')).toHaveText('Order Logistics');
+ await page.locator('.page-heading').getByRole('button',{name:'Plan delivery',exact:true}).click();
+ const plan=page.getByRole('dialog');
+ await plan.getByLabel('Confirmed order',{exact:true}).selectOption({index:1});
+ await plan.getByLabel('Driver',{exact:true}).fill('Browser Driver');
+ await plan.getByLabel('Vehicle',{exact:true}).fill('KDA 001A');
+ await plan.getByRole('button',{name:'Save',exact:true}).click();
+ await expect(page.getByText('Delivery planned',{exact:true})).toBeVisible();
+ const delivery=page.locator('.logistics-card').filter({hasText:'Integration Client'}).first();
+ await expect(delivery.locator('.badge')).toHaveText('Planned');
+ await delivery.getByRole('button',{name:'Dispatch',exact:true}).click();
+ await page.getByRole('dialog').getByRole('button',{name:'Dispatch',exact:true}).click();
+ await expect(page.getByText('Delivery dispatched',{exact:true})).toBeVisible();
+ await expect(delivery.locator('.badge')).toHaveText('Dispatched');
+ await delivery.getByRole('button',{name:'Mark delivered',exact:true}).click();
+ await page.getByRole('dialog').getByRole('button',{name:'Mark delivered',exact:true}).click();
+ await expect(page.getByText('Delivery delivered',{exact:true})).toBeVisible();
+ await expect(delivery.locator('.badge')).toHaveText('Delivered');
+ await delivery.getByRole('button',{name:'Open delivery note',exact:true}).click();
+ const note=page.getByRole('dialog');
+ await expect(note.locator('.delivery-note h3')).toHaveText('Delivery note');
+ await expect(note.getByText(/CHM-INV-/)).toBeVisible();
+ await expect(note.locator('.delivery-note-table tbody tr')).toHaveCount(2);
+ await expect(note.getByRole('button',{name:'Print',exact:true})).toBeVisible();
+ expect(await note.evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);
+ await note.locator('.dialog-actions').getByRole('button',{name:'Close',exact:true}).click();
+ await page.getByRole('tab',{name:/Inventory ledger/}).click();
+ await expect(page.locator('.logistics-ledger-row.dispatch').first()).toContainText('DN-');
+ await expect(page.getByRole('alert')).toHaveCount(0);
 });
 
 });

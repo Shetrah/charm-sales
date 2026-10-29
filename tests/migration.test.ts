@@ -29,7 +29,11 @@ describe.sequential('Supabase PostgreSQL migration and permissions',()=>{
  it('preserves 48 variants, null quotation prices and source discrepancies',async()=>{
   expect(await scalar('select count(*)::int from charm.products')).toBe(48);
   expect(await scalar('select count(*)::int from charm.products where unit_price is not null')).toBe(0);
-  expect(await scalar('select count(*)::int from charm.products where needs_review')).toBe(3);
+  expect(await scalar('select count(*)::int from charm.products where needs_review')).toBe(7);
+  expect(await scalar("select count(*)::int from charm.products where 'duplicate_barcode'=any(pricing_flags)")).toBe(2);
+  expect(await scalar("select count(*)::int from charm.products where 'ambiguous_fragrance'=any(pricing_flags)")).toBe(3);
+  expect(await scalar("select count(*)::int from charm.products where 'capacity_typo'=any(pricing_flags)")).toBe(1);
+  expect(await scalar("select count(*)::int from charm.products where 'verify_barcode'=any(pricing_flags)")).toBe(1);
   expect(await scalar('select capacity from charm.products where id=24')).toBe('751ml');
   expect(await scalar('select barcode from charm.products where id=18')).toBe(await scalar('select barcode from charm.products where id=20'));
   await db.exec("update charm.products set unit_price=15.50 where id=1");

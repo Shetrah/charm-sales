@@ -1,0 +1,62 @@
+import {test,expect,type Page} from '@playwright/test';
+async function login(page:Page,email:string){
+ await page.goto('/');await page.getByLabel('Email address').fill(email);await page.getByLabel('Password',{exact:true}).fill('test-password-123');await page.getByRole('button',{name:'Sign in',exact:true}).click();await expect(page.locator('.sidebar-footer')).toBeVisible();
+}
+test('quotation price book shows wholesale and retail prices and admin price history',async({page})=>{
+ test.skip(test.info().project.name!=='desktop','Pricing assertions run once against the shared database.');
+ await login(page,'admin@test.invalid');
+ await page.goto('/products');
+ const first=page.locator('.catalogue-cards .record-card').first();
+ await expect(first).toContainText('Wholesale / bottle');
+ await expect(first).toContainText('Retail / bottle');
+ await expect(first).toContainText('KES 966.00');
+ await expect(first).toContainText('KES 1,380.00');
+ await expect(first).toContainText('Gross margin (%): 30.0%');
+ await page.goto('/sales-ops');
+ await page.getByRole('tab',{name:'Pricing & offers',exact:true}).click();
+ await expect(page.getByRole('heading',{name:'Quotation price book',exact:true})).toBeVisible();
+ const book=page.locator('.sales-table-wrap').first();
+ await expect(book).toContainText('Handwash · 500ml');
+ await expect(book).toContainText('133');
+ await expect(book).toContainText('190');
+ await expect(book).toContainText('2,660');
+ await expect(book).toContainText('3,800');
+ await expect(book).toContainText('2026-10-29');
+ await expect(book).toContainText('Duplicate barcode');
+ await expect(book).toContainText('Capacity typo');
+ await page.getByRole('button',{name:'Adjust price',exact:true}).first().click();
+ const priceDialog=page.getByRole('dialog');
+ await priceDialog.getByLabel('New price (KES)',{exact:true}).fill('999');
+ await priceDialog.getByLabel('Effective from',{exact:true}).fill('2030-01-01');
+ await priceDialog.getByRole('button',{name:'Save',exact:true}).click();
+ await expect(page.getByRole('dialog')).toHaveCount(0);
+ await expect(page.getByRole('alert')).toHaveCount(0);
+});
+test('order lines pre-fill approved prices by customer classification and unit',async({page})=>{
+ test.skip(test.info().project.name!=='desktop','Order pricing assertions run once against the shared database.');
+ await login(page,'sales@test.invalid');
+ await page.goto('/orders');await page.getByRole('button',{name:'Create record',exact:true}).click();
+ const dialog=page.getByRole('dialog');
+ await dialog.getByRole('combobox',{name:'Find a client'}).selectOption({label:'Integration Client'});
+ await dialog.getByRole('combobox',{name:'Find a product variant'}).selectOption({index:1});
+ const price=dialog.getByLabel('Price per selected unit (KES)',{exact:true});
+ await expect(price).toHaveValue('1380.00');
+ await dialog.getByLabel('Unit',{exact:true}).selectOption('carton');
+ await expect(price).toHaveValue('5520.00');
+ await dialog.getByLabel('Customer type',{exact:true}).selectOption('wholesaler');
+ await expect(price).toHaveValue('3864.00');
+ await price.fill('4000.00');
+ await dialog.getByLabel('Unit',{exact:true}).selectOption('bottle');
+ await expect(price).toHaveValue('4000.00');
+});
+test('quotation price book stays usable on small screens',async({page})=>{
+ test.skip(test.info().project.name==='desktop','Small-screen pricing check runs on tablet and mobile.');
+ await login(page,'sales@test.invalid');
+ await page.goto('/sales-ops');
+ await page.getByRole('tab',{name:'Pricing & offers',exact:true}).click();
+ await expect(page.getByRole('heading',{name:'Quotation price book',exact:true})).toBeVisible();
+ await expect(page.locator('.sales-table-wrap').first()).toContainText('Handwash · 500ml');
+ const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth);
+ expect(overflow).toBeLessThanOrEqual(1);
+ await page.screenshot({path:`tests/.artifacts/pricing-${test.info().project.name}.png`,fullPage:true});
+});
