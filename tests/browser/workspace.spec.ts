@@ -115,7 +115,7 @@ test('salesperson submits an exact multi-line order through the connected applic
  await page.goto('/orders');await page.getByRole('row').filter({has:page.getByRole('cell',{name:'49.30',exact:true})}).getByRole('button',{name:'Confirm order',exact:true}).click();
  await page.getByLabel('I have reviewed the submitted contract and supporting documents.').check();
  await page.getByRole('dialog').getByRole('button',{name:'Confirm order',exact:true}).click();
- await expect(page.locator('dialog')).toHaveCount(0);await expect(page.getByRole('cell',{name:'Confirmed',exact:true})).toBeVisible();
+ await expect(page.locator('dialog')).toHaveCount(0);await expect(page.getByRole('row').filter({has:page.getByRole('cell',{name:'49.30',exact:true})}).getByRole('cell',{name:'Confirmed',exact:true}).first()).toBeVisible();
  await page.getByRole('button',{name:'Sign out',exact:true}).click();
  await signIn(page,'sales@test.invalid');
  await page.goto('/payments');await page.getByRole('button',{name:'Create record',exact:true}).click();
@@ -129,6 +129,7 @@ test('salesperson submits an exact multi-line order through the connected applic
  await page.getByRole('dialog').getByRole('button',{name:'Verify payment',exact:true}).click();await expect(page.locator('dialog')).toHaveCount(0);
  await page.goto('/balances');await expect(page.getByRole('cell',{name:'39.30',exact:true})).toBeVisible();
  await page.goto('/logistics');await expect(page.locator('main h1')).toHaveText('Order Logistics');
+ await page.getByRole('tab',{name:/Deliveries/}).click();
  await page.locator('.page-heading').getByRole('button',{name:'Plan delivery',exact:true}).click();
  const plan=page.getByRole('dialog');
  await plan.getByLabel('Confirmed order',{exact:true}).selectOption({index:1});
@@ -136,7 +137,7 @@ test('salesperson submits an exact multi-line order through the connected applic
  await plan.getByLabel('Vehicle',{exact:true}).fill('KDA 001A');
  await plan.getByRole('button',{name:'Save',exact:true}).click();
  await expect(page.getByText('Delivery planned',{exact:true})).toBeVisible();
- const delivery=page.locator('.logistics-card').filter({hasText:'Integration Client'}).first();
+ const delivery=page.locator('.logistics-card').filter({hasText:'Browser Driver'}).first();
  await expect(delivery.locator('.badge')).toHaveText('Planned');
  await delivery.getByRole('button',{name:'Dispatch',exact:true}).click();
  await page.getByRole('dialog').getByRole('button',{name:'Dispatch',exact:true}).click();
@@ -147,10 +148,15 @@ test('salesperson submits an exact multi-line order through the connected applic
  await expect(page.getByText('Delivery delivered',{exact:true})).toBeVisible();
  await expect(delivery.locator('.badge')).toHaveText('Delivered');
  await delivery.getByRole('button',{name:'Open delivery note',exact:true}).click();
- const note=page.getByRole('dialog');
- await expect(note.locator('.delivery-note h3')).toHaveText('Delivery note');
- await expect(note.getByText(/CHM-INV-/)).toBeVisible();
- await expect(note.locator('.delivery-note-table tbody tr')).toHaveCount(2);
+ const note=page.locator('dialog').last();
+ await expect(note.locator('.commercial-doc h3')).toHaveText('Delivery Note');
+ await expect(note.locator('.doc-number')).toHaveText(/^DN-\d{8}-\d{5}$/);
+ await expect(note.locator('.doc-brand img')).toBeVisible();
+ await expect(note.locator('.doc-lines tbody tr')).toHaveCount(2);
+ await expect(note.locator('.doc-party').first()).toContainText('Integration Client');
+ await note.getByRole('tab',{name:'Tax Invoice',exact:true}).click();
+ await expect(note.locator('.doc-number')).toHaveText(/^CHM-INV-/);
+ await expect(note.locator('.doc-toolbar, .doc-scroll').first()).toBeVisible();
  await expect(note.getByRole('button',{name:'Print',exact:true})).toBeVisible();
  expect(await note.evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);
  await note.locator('.dialog-actions').getByRole('button',{name:'Close',exact:true}).click();

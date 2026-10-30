@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { CalendarDays, CircleAlert, FileText, PackageCheck, Truck } from 'lucide-react';
+import { CalendarDays, CircleAlert, ClipboardList, Factory, FileText, PackageCheck, Truck, type LucideIcon } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import type { Row } from './lib/data';
 import { formatBusinessDate, formatBusinessDateTime, nairobiDate } from './lib/dates';
@@ -8,27 +8,33 @@ import { enrich } from './lib/insights';
 import { rpc, supabase } from './lib/supabase';
 import { usePreferences } from './i18n';
 import { Dialog, ErrorNotice, Field, Loading } from './components';
+import { OrderDocumentViewer } from './CommercialDocuments';
 
-type Tab = 'deliveries' | 'ledger';
+type Tab = 'intake' | 'deliveries' | 'ledger';
 const statusKey = (status:string) => status==='planned'?'statusPlanned':status==='dispatched'?'statusDispatched':status==='delivered'?'statusDelivered':'statusFailed';
+const allTabs:[Tab,LucideIcon][]=[['intake',ClipboardList],['deliveries',Truck],['ledger',PackageCheck]];
 
-export default function Logistics({scope}:{scope:string}){
+export default function Logistics({scope,desk=false}:{scope:string;desk?:boolean}){
  const {t,language}=usePreferences();const qc=useQueryClient();const [params,setParams]=useSearchParams();
- const [tab,setTab]=useState<Tab>('deliveries');const [filter,setFilter]=useState('');
- const [plan,setPlan]=useState<Row|null>(null);const [action,setAction]=useState<{row:Row;status:'dispatched'|'delivered'|'failed'}|null>(null);const [note,setNote]=useState<Row|null>(null);
+ const [tab,setTab]=useState<Tab>(desk?'intake':'deliveries');const [filter,setFilter]=useState('');
+ const [plan,setPlan]=useState<Row|null>(null);const [production,setProduction]=useState<Row|null>(null);const [action,setAction]=useState<{row:Row;status:'dispatched'|'delivered'|'failed'}|null>(null);const [note,setNote]=useState<Row|null>(null);
  const [busy,setBusy]=useState(false);const [dialogError,setDialogError]=useState<unknown>();const [notice,setNotice]=useState('');
  const autoOpened=useRef<string|null>(null);const today=nairobiDate();
  const money=(value:unknown)=>Number(value??0).toLocaleString(language==='zh'?'zh-CN':'en-KE');
  const deliveries=useQuery({queryKey:[scope,'deliveries'],refetchInterval:10000,queryFn:async()=>{const {data,error}=await supabase!.from('sales_deliveries').select('*').order('id',{ascending:false}).limit(100);if(error)throw error;return enrich(data as Row[]);}});
  const orders=useQuery({queryKey:[scope,'logistics-orders'],queryFn:async()=>{const {data,error}=await supabase!.from('orders').select('id,client_id,salesperson_id,total,status,due_date,confirmed_at').eq('status','confirmed').order('id',{ascending:false}).limit(100);if(error)throw error;return enrich(data as Row[]);}});
  const ledger=useQuery({queryKey:[scope,'inventory-ledger'],enabled:tab==='ledger',refetchInterval:15000,queryFn:async()=>{const result=await rpc<{rows:Row[]}>('sales_inventory_ledger',{p_limit:60});return result.rows;}});
- const document=useQuery({queryKey:[scope,'delivery-document',note?.order_id],enabled:!!note,queryFn:()=>rpc<Row>('sales_order_documents',{p_order:Number(note!.order_id)})});
+ const intake=useQuery({queryKey:[scope,'logistics-intake'],enabled:desk,refetchInterval:15000,queryFn:async()=>rpc<Row[]>('logistics_order_intake')});
  const summary=useMemo(()=>{const rows=deliveries.data??[];return {planned:rows.filter(r=>r.status==='planned').length,dispatched:rows.filter(r=>r.status==='dispatched').length,deliveredToday:rows.filter(r=>r.status==='delivered'&&r.delivered_at&&nairobiDate(new Date(r.delivered_at))===today).length,failed:rows.filter(r=>r.status==='failed').length};},[deliveries.data,today]);
  const ready=useMemo(()=>{const assigned=new Set((deliveries.data??[]).map(row=>String(row.order_id)));return (orders.data??[]).filter(order=>!assigned.has(String(order.id)));},[orders.data,deliveries.data]);
+ const gapsOf=(row:Row):Row[]=>Array.isArray(row.short_items)?row.short_items:[];
+ const intakeStats=useMemo(()=>{const rows=intake.data??[];return {waiting:rows.length,covered:rows.filter(row=>row.covered).length,producing:rows.filter(row=>!row.covered&&row.production_required).length,shortLines:rows.reduce((sum,row)=>sum+(Array.isArray(row.short_items)?row.short_items.length:0),0)};},[intake.data]);
  const visible=(deliveries.data??[]).filter(row=>!filter||row.status===filter);
+ const tabs=desk?allTabs:allTabs.filter(([key])=>key!=='intake');
+ const queue=intake.data??[];
  useEffect(()=>{const record=params.get('record');if(!record||!deliveries.data)return;const row=deliveries.data.find(item=>String(item.id)===record);if(row&&autoOpened.current!==record){autoOpened.current=record;setNote(row);}},[params,deliveries.data]);
  const closeNote=()=>{setNote(null);if(params.get('record')){const next=new URLSearchParams(params);next.delete('record');setParams(next,{replace:true});}};
- const refresh=async(message:string)=>{await qc.invalidateQueries({queryKey:[scope,'deliveries']});await qc.invalidateQueries({queryKey:[scope,'logistics-orders']});await qc.invalidateQueries({queryKey:[scope,'inventory-ledger']});setNotice(t(message));};
+ const refresh=async(message:string)=>{await qc.invalidateQueries({queryKey:[scope,'deliveries']});await qc.invalidateQueries({queryKey:[scope,'logistics-orders']});await qc.invalidateQueries({queryKey:[scope,'inventory-ledger']});await qc.invalidateQueries({queryKey:[scope,'logistics-intake']});setNotice(t(message));};
  async function submitPlan(form:HTMLFormElement){
   if(!plan)return;const d=new FormData(form);setBusy(true);setDialogError(undefined);
   try{
@@ -46,10 +52,32 @@ export default function Logistics({scope}:{scope:string}){
   }catch(e){setDialogError(e);}finally{setBusy(false);}
  }
  const orderFor=(row:Row)=>(orders.data??[]).find(order=>String(order.id)===String(row.order_id))??{id:row.order_id,client_id:row.client_id,_client:row._client,total:null,status:'confirmed'};
+ const planFor=(row:Row)=>({id:row.order_id,client_id:row.client_id,_client:row.client_name,total:row.order_total,due_date:row.due_date,status:'confirmed'});
+ async function submitProduction(form:HTMLFormElement){
+  if(!production)return;const d=new FormData(form);setBusy(true);setDialogError(undefined);
+  try{
+   await rpc('logistics_arrange_production',{p_key:crypto.randomUUID(),p_order:Number(production.order_id),p_ready_on:String(d.get('ready_on')||'')});
+   setProduction(null);await refresh('productionArranged');
+  }catch(e){setDialogError(e);}finally{setBusy(false);}
+ }
  return <main className="content logistics-page">
   <div className="page-heading"><div><span className="eyebrow">CHARM · FULFILLMENT</span><h1>{t('logisticsTitle')}</h1><p>{t('logisticsIntro')}</p></div>{tab==='deliveries'&&<button className="primary" onClick={()=>setPlan({id:'',_client:''})} disabled={ready.length===0}><Truck size={18}/>{t('planDelivery')}</button>}</div>
-  <div className="field-tabs" role="tablist">{([['deliveries','Truck'],['ledger','PackageCheck']] as const).map(([key,icon])=><button key={key} role="tab" aria-selected={tab===key} className={tab===key?'active':''} onClick={()=>setTab(key)}>{icon==='Truck'?<Truck size={17}/>:<PackageCheck size={17}/>}{t(`logisticsTab_${key}`)}{key==='deliveries'&&!!(summary.planned+summary.dispatched)&&<em>{summary.planned+summary.dispatched}</em>}</button>)}</div>
+  <div className="field-tabs" role="tablist">{tabs.map(([key,Icon])=><button key={key} role="tab" aria-selected={tab===key} className={tab===key?'active':''} onClick={()=>setTab(key)}><Icon size={17}/>{t(`logisticsTab_${key}`)}{key==='deliveries'&&!!(summary.planned+summary.dispatched)&&<em>{summary.planned+summary.dispatched}</em>}{key==='intake'&&!!intakeStats.waiting&&<em>{intakeStats.waiting}</em>}</button>)}</div>
   {!!notice&&<div role="status" className="notice">{notice}</div>}
+  {tab==='intake'&&<section className="card field-list-card">
+   <header><div><h2>{t('intakeTitle')}</h2><p className="field-note">{t('intakeHint')}</p></div><span className="badge">{intakeStats.waiting}</span></header>
+   <div className="field-cards logistics-kpis intake-kpis">
+    <article className="field-card"><span className="eyebrow">{t('coveredOrders')}</span><strong>{intakeStats.covered}</strong><small>{t('planDelivery')}</small><PackageCheck size={18}/></article>
+    <article className="field-card"><span className="eyebrow">{t('productionOrders')}</span><strong>{intakeStats.producing}</strong><small>{t('arrangeProduction')}</small><Factory size={18}/></article>
+    <article className="field-card"><span className="eyebrow">{t('shortLines')}</span><strong>{intakeStats.shortLines}</strong><small>{t('productionShortfall')}</small><CircleAlert size={18}/></article>
+   </div>
+   {intake.isPending?<Loading/>:intake.isError?<ErrorNotice error={intake.error} retry={()=>intake.refetch()}/>:queue.length===0?<div className="state"><ClipboardList size={32}/><h3>{t('intakeEmpty')}</h3><p>{t('logisticsEmptyHint')}</p></div>:<div className="field-records intake-board">{queue.map(row=>{const gaps=gapsOf(row);return <article className={`field-record intake-card ${row.covered?'covered':'short'}`} key={row.order_id}>
+    <header><div><span className="eyebrow">{t('order_id')} #{row.order_id}</span><h3>{row.client_name}</h3><small>{row.salesperson_name} · {t('total')}: {money(row.order_total)}{row.due_date?` · ${t('due_date')}: ${formatBusinessDate(row.due_date,language)}`:''}</small></div><span className={`badge ${row.production_required?'underProduction':row.covered?'statusDelivered':'needsProduction'}`}>{t(row.production_required?'underProduction':row.covered?'stockAvailable':'needsProduction')}</span></header>
+    <div className="field-meta">{row.confirmed_at&&<span><CalendarDays size={14}/>{t('confirmed_at')}: {formatBusinessDateTime(row.confirmed_at,language)}</span>}{row.delivery_status&&<span><Truck size={14}/>{t(statusKey(String(row.delivery_status)))}</span>}{row.production_ready_on&&<span><Factory size={14}/>{t('productionReadyOn')}: {formatBusinessDate(row.production_ready_on,language)}</span>}</div>
+    {!!gaps.length&&<ul className="intake-gaps">{gaps.map((gap:Row)=><li key={String(gap.product_id)}><strong>{gap.product}</strong><span>{t('neededQuantity')}: {money(gap.needed)}</span><span className="negative">{t('productionShortfall')}: {money(gap.short)}</span></li>)}</ul>}
+    <div className="field-record-actions">{row.covered&&<button className="primary" onClick={()=>setPlan(planFor(row))}><Truck size={15}/>{t(row.delivery_id?'rescheduleDelivery':'planDelivery')}</button>}{!row.covered&&<button className="primary" onClick={()=>setProduction(row)}><Factory size={15}/>{t('arrangeProduction')}</button>}{!!row.delivery_id&&<button onClick={()=>setNote(row)}><FileText size={15}/>{t('openDeliveryNote')}</button>}</div>
+   </article>;})}</div>}
+  </section>}
   {tab==='deliveries'&&<>
    <div className="field-cards logistics-kpis">
     <article className="field-card"><span className="eyebrow">{t('plannedDeliveries')}</span><strong>{summary.planned}</strong><small>{t('readyToDispatch')}</small><CalendarDays size={18}/></article>
@@ -85,24 +113,14 @@ export default function Logistics({scope}:{scope:string}){
    {!!dialogError&&<ErrorNotice error={dialogError}/>}
    <div className="dialog-actions"><button type="button" onClick={()=>{setAction(null);setDialogError(undefined);}}>{t('cancel')}</button><button className="primary" disabled={busy}>{t(busy?'saving':action.status==='dispatched'?'dispatch':action.status==='delivered'?'markDelivered':'reportFailure')}</button></div>
   </form></Dialog>}
-  {note&&<Dialog title={t('deliveryNote')} onClose={closeNote}>
-   {document.isPending?<Loading/>:document.isError?<ErrorNotice error={document.error} retry={()=>document.refetch()}/>:document.data&&<DeliveryNote document={document.data} language={language} t={t}/>}
-   <div className="dialog-actions delivery-note-actions"><button type="button" onClick={closeNote}>{t('close')}</button><button className="primary" type="button" disabled={document.isPending} onClick={()=>window.print()}>{t('printDocument')}</button></div>
-  </Dialog>}
+  {production&&<Dialog title={`${t('arrangeProduction')} · ${t('order')} #${production.order_id}`} onClose={()=>{setProduction(null);setDialogError(undefined);}}><form onSubmit={e=>{e.preventDefault();void submitProduction(e.currentTarget);}}>
+   <div className="field-meta-list"><div><dt>{t('order')}</dt><dd>#{production.order_id}</dd></div><div><dt>{t('client')}</dt><dd>{production.client_name}</dd></div><div><dt>{t('total')}</dt><dd>{money(production.order_total)}</dd></div>{production.salesperson_name&&<div><dt>{t('salesperson_id')}</dt><dd>{production.salesperson_name}</dd></div>}</div>
+   {(()=>{const gaps=gapsOf(production);return gaps.length?<ul className="intake-gaps scheduled">{gaps.map((gap:Row)=><li key={String(gap.product_id)}><strong>{gap.product}</strong><span>{t('neededQuantity')}: {money(gap.needed)}</span><span className="negative">{t('productionShortfall')}: {money(gap.short)}</span></li>)}</ul>:<p className="field-note">{t('intakeHint')}</p>;})()}
+   <Field label="readyOn"><input name="ready_on" type="date" required min={today} max={nairobiDate(new Date(Date.now()+180*86400000))} defaultValue={nairobiDate(new Date(Date.now()+3*86400000))}/><small>{t('readyOnHint')}</small></Field>
+   <p className="field-note">{t('arrangeProductionHint')}</p>
+   {!!dialogError&&<ErrorNotice error={dialogError}/>}
+   <div className="dialog-actions"><button type="button" onClick={()=>{setProduction(null);setDialogError(undefined);}}>{t('cancel')}</button><button className="primary" disabled={busy}>{t(busy?'saving':'arrangeProduction')}</button></div>
+  </form></Dialog>}
+  {note&&<OrderDocumentViewer scope={scope} orderId={Number(note.order_id)} initial="delivery" onClose={closeNote}/>}
  </main>;
-}
-
-function DeliveryNote({document,language,t}:{document:Row;language:'en'|'zh';t:(key:string)=>string}){
- const {client,order,delivery,invoice,items,credit_notes}=document;const money=(value:unknown)=>Number(value??0).toLocaleString(language==='zh'?'zh-CN':'en-KE');
- return <div className="delivery-note">
-  <header><div><span className="eyebrow">CHARM KENYA</span><h3>{t('deliveryNote')}</h3><strong>{delivery?.delivery_number??`#${order.id}`}</strong></div>{delivery&&<span className={`badge ${delivery.status}`}>{t(statusKey(delivery.status))}</span>}</header>
-  <dl className="delivery-note-meta"><div><dt>{t('client')}</dt><dd>{client.name}</dd></div><div><dt>{t('phone')}</dt><dd>{client.phone||'—'}</dd></div><div><dt>{t('location')}</dt><dd>{client.location||'—'}</dd></div><div><dt>{t('order')}</dt><dd>#{order.id}</dd></div><div><dt>{t('salesperson_id')}</dt><dd>{document.salesperson}</dd></div><div><dt>{t('scheduledFor')}</dt><dd>{delivery?.scheduled_on?formatBusinessDate(delivery.scheduled_on,language):'—'}</dd></div></dl>
-  <div className="delivery-note-table"><table><thead><tr><th>{t('product_description')}</th><th>{t('quantity')}</th><th>{t('unit_price')}</th><th>{t('line_total')}</th></tr></thead><tbody>{(delivery?.items?.length?delivery.items:items).map((line:Row,index:number)=><tr key={index}><td>{line.description}{line.sku?<small>{line.sku}</small>:null}</td><td>{line.quantity} {t(line.unit==='carton'?'cartonUnit':'bottle')}</td><td>{money(line.unit_price)}</td><td>{money(line.line_total)}</td></tr>)}</tbody></table></div>
-  <div className="delivery-note-totals"><div><span>{t('total')}</span><strong>{money(order.total)}</strong></div><div><span>{t('invoice')}</span><strong>{invoice?`${invoice.invoice_number} · ${money(invoice.total)}`:'—'}</strong>{!invoice&&<small>{t('invoiceNotIssued')}</small>}</div></div>
-  {(credit_notes??[]).length>0&&<div className="delivery-note-credits"><h4>{t('creditNotes')}</h4>{credit_notes.map((credit:Row)=><p key={credit.id}><strong>{credit.credit_note}</strong> · {money(credit.amount)} · #{credit.id}</p>)}</div>}
-  {delivery?.failure_reason&&<p className="field-rejection">{delivery.failure_reason}</p>}
-  <div className="delivery-note-sign"><div><span>{t('receivedBy')}</span><i/></div><div><span>{t('date')}</span><i/></div></div>
-  <p className="field-note">{t('deliveryNoteFooter')}</p>
-  <p className="field-note">{t('deliveryDocumentHint')}</p>
- </div>;
 }

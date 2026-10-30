@@ -21,7 +21,8 @@ test('quotation price book shows wholesale and retail prices and admin price his
  await expect(book).toContainText('190');
  await expect(book).toContainText('2,660');
  await expect(book).toContainText('3,800');
- await expect(book).toContainText('2026-10-29');
+ const nairobiToday=new Date(Date.now()+3*3600_000).toISOString().slice(0,10);
+ await expect(book).toContainText(nairobiToday);
  await expect(book).toContainText('Duplicate barcode');
  await expect(book).toContainText('Capacity typo');
  await page.getByRole('button',{name:'Adjust price',exact:true}).first().click();

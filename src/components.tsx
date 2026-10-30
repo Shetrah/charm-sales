@@ -1,4 +1,4 @@
-import { useEffect, useState, useId, Children, cloneElement, isValidElement, type ReactElement, type ReactNode } from 'react';
+import { useEffect, useState, useId, useRef, Children, cloneElement, isValidElement, type ReactElement, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Moon, Sun, Languages, X, LoaderCircle } from 'lucide-react';
 import { usePreferences, translatedError } from './i18n';
@@ -7,9 +7,9 @@ export function useDebounce(value:string){const [debounced,set]=useState(value);
 export function Preferences(){const {t,language,theme,toggleTheme,toggleLanguage}=usePreferences();return <div className="preferences"><button type="button" className="icon-button" aria-label={t(theme==='dark'?'light':'dark')} onClick={toggleTheme}>{theme==='dark'?<Sun size={18}/>:<Moon size={18}/>}</button><button type="button" className="language" aria-label={language==='en'?'English / 简体中文':'简体中文 / English'} onClick={toggleLanguage}><Languages size={17}/> {language==='en'?'English / 简体中文':'简体中文 / English'}</button></div>;}
 export function Loading(){const {t}=usePreferences();return <div className="state" role="status"><LoaderCircle className="spin"/>{t('loading')}</div>;}
 export function ErrorNotice({error,retry}:{error:unknown;retry?:()=>void}){const {t}=usePreferences();return <div className="notice error" role="alert">{translatedError(error,t)}{retry&&<button onClick={retry}>{t('retry')}</button>}</div>;}
-export function Dialog({title,children,onClose}:{title:string;children:ReactNode;onClose:()=>void}){
- const {t}=usePreferences();const titleId=useId();useEffect(()=>{const old=document.activeElement as HTMLElement;const overflow=document.body.style.overflow;document.body.style.overflow='hidden';const el=document.querySelector('dialog') as HTMLDialogElement;el?.showModal();return()=>{document.body.style.overflow=overflow;el?.close();old?.focus();};},[]);
- return <dialog aria-labelledby={titleId} onCancel={onClose} onKeyDown={e=>{if(e.key==='Escape')onClose();}}><div className="dialog-head"><h2 id={titleId}>{title}</h2><button type="button" className="icon-button" onClick={onClose} aria-label={t('close')}><X/></button></div><div className="dialog-body">{children}</div></dialog>;
+export function Dialog({title,children,onClose,className}:{title:string;children:ReactNode;onClose:()=>void;className?:string}){
+ const {t}=usePreferences();const titleId=useId();const ref=useRef<HTMLDialogElement>(null);useEffect(()=>{const old=document.activeElement as HTMLElement;const overflow=document.body.style.overflow;document.body.style.overflow='hidden';const el=ref.current;el?.showModal();return()=>{document.body.style.overflow=overflow;el?.close();old?.focus();};},[]);
+ return <dialog ref={ref} className={className} aria-labelledby={titleId} onCancel={onClose} onKeyDown={e=>{if(e.key==='Escape')onClose();}}><div className="dialog-head"><h2 id={titleId}>{title}</h2><button type="button" className="icon-button" onClick={onClose} aria-label={t('close')}><X/></button></div><div className="dialog-body">{children}</div></dialog>;
 }
 export function Field({label,children}:{label:string;children:ReactNode}){
  const {t}=usePreferences();const id=useId();

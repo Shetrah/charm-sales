@@ -38,7 +38,7 @@ createServer((req,res)=>{queue=queue.then(async()=>{
   await db.exec('reset role');await db.query("select set_config('request.jwt.claim.sub',$1,false)",[user.id]);await db.exec('set role authenticated');
   if(url.pathname==='/functions/v1/add-staff'){
    const check=await db.query('select charm.is_admin() as allowed');if(!check.rows[0].allowed){send(403,{error:'forbidden'});return;}
-   if(!['admin','salesperson','finance_officer'].includes(body.role)||typeof body.password!=='string'||body.password.length<12){send(422,{error:'invalid'});return;}
+   if(!['admin','salesperson','finance_officer','logistics_manager'].includes(body.role)||typeof body.password!=='string'||body.password.length<12){send(422,{error:'invalid'});return;}
    if(accounts.some(account=>account.email===body.email)){send(409,{error:'staffExists'});return;}
    const account={id:crypto.randomUUID(),email:body.email,name:body.name,role:body.role};
    await db.exec('reset role');await db.query('insert into auth.users values($1,$2)',[account.id,account.email]);await db.exec('set role service_role');
@@ -51,16 +51,16 @@ createServer((req,res)=>{queue=queue.then(async()=>{
    await db.query('insert into storage.objects(bucket_id,name) values($1,$2)',[bucket,name]);send(200,{Id:'test-storage-id',Key:bucket+'/'+name});return;
   }
   if(url.pathname.startsWith('/rest/v1/rpc/')){
-   const fn=url.pathname.split('/').pop();if(!/^[a-z_]+$/.test(fn))throw Error('invalid');
-   const keys=Object.keys(body);if(keys.some(k=>!/^p_[a-z_]+$/.test(k)))throw Error('invalid');
+   const fn=url.pathname.split('/').pop();if(!/^[a-z][a-z0-9_]*$/.test(fn))throw Error('invalid');
+   const keys=Object.keys(body);if(keys.some(k=>!/^p_[a-z][a-z0-9_]*$/.test(k)))throw Error('invalid');
    const params=keys.map(k=>typeof body[k]==='object'&&body[k]!==null?JSON.stringify(body[k]):body[k]);
    const args=keys.map((k,i)=>`${k} => $${i+1}`).join(',');
-   const listed=['product_price_book','product_price_history','sales_atp','sales_credit_status'].includes(fn);
+   const listed=['product_price_book','product_price_history','sales_atp','sales_credit_status','logistics_order_intake'].includes(fn);
    if(listed){const rows=await db.query(`select * from charm.${fn}(${args})`,params);send(200,rows.rows);return;}
    const data=await db.query(`select charm.${fn}(${args}) as result`,params);
    send(200,data.rows[0].result);return;
   }
-  const table=url.pathname.split('/').pop();if(!['users','team_directory','clients','products','product_prices','quotation_batches','quotation_rows','orders','order_items','order_documents','order_contract_versions','payments','order_balances','visits','visit_exceptions','plans','plan_stops','expenses','travel_request_items','travel_request_documents','travel_policy','reports','workdays','location_points','audit_logs','finance_notifications','finance_requests','finance_disbursements','management_reports','management_report_versions','attendance_policy','attendance_days','leave_types','leave_requests','client_assignments','commission_rules','commission_tiers','commission_entries','sales_deliveries','sales_delivery_items'].includes(table))throw Error('invalid');
+  const table=url.pathname.split('/').pop();if(!['users','team_directory','clients','products','product_prices','quotation_batches','quotation_rows','orders','order_items','order_documents','order_contract_versions','payments','order_balances','visits','visit_exceptions','plans','plan_stops','expenses','travel_request_items','travel_request_documents','travel_policy','reports','workdays','location_points','audit_logs','finance_notifications','finance_requests','finance_disbursements','management_reports','management_report_versions','attendance_policy','attendance_days','leave_types','leave_requests','client_assignments','commission_rules','commission_tiers','commission_entries','sales_deliveries','sales_delivery_items','company_profile'].includes(table))throw Error('invalid');
   const columns=url.searchParams.get('select')??'*';if(!/^[a-z_,*]+$/.test(columns))throw Error('invalid');
   const params=[],conditions=[];
   for(const [k,v] of url.searchParams.entries())if(!['select','order','offset','limit','or'].includes(k)){

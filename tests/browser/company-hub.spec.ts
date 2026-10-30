@@ -23,7 +23,7 @@ test('Admin adds staff with a temporary password and staff can change it',async(
  await login(page,'admin@test.invalid');await page.goto('/staff');await page.getByRole('button',{name:'Add staff',exact:true}).click();
  const dialog=page.getByRole('dialog');await dialog.getByLabel('Name',{exact:true}).fill('New Finance Staff');await dialog.getByLabel('Email address').fill('new-finance@test.invalid');
  await dialog.getByLabel('Temporary password',{exact:true}).fill('temporary-test-password');await dialog.getByLabel('Role',{exact:true}).selectOption('finance_officer');
- await expect(dialog.getByLabel('Role').locator('option')).toHaveCount(3);await dialog.getByRole('button',{name:'Save',exact:true}).click();await expect(dialog).toHaveCount(0);
+ await expect(dialog.getByLabel('Role').locator('option')).toHaveCount(4);await dialog.getByRole('button',{name:'Save',exact:true}).click();await expect(dialog).toHaveCount(0);
  const context=await browser.newContext(),staff=await context.newPage();
  try{
   await login(staff,'new-finance@test.invalid','temporary-test-password');await expect(staff).toHaveURL(/\/finance$/);

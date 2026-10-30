@@ -249,7 +249,7 @@ export default function PeoplePerformance({scope,profile}:{scope:string;profile:
    </>}
   </section>}
 
-  {staffProfile&&<StaffDetail row={staffProfile} scope={scope} currentUserId={profile.id} onClose={()=>setStaffProfile(null)} onSaved={()=>{void refresh('');}}/>}
+  {staffProfile&&<StaffDetail row={staffProfile} scope={scope} currentUserId={profile.id} canEditPhoto={profile.role==='admin'||Number(staffProfile.id)===profile.id} onClose={()=>setStaffProfile(null)} onSaved={()=>{void refresh('');}}/>}
   {attendanceStaff&&<AttendanceDetail staff={attendanceStaff} rows={attendanceRows.filter(row=>String(row.salesperson_id)===String(attendanceStaff.salesperson_id))} admin={admin} language={language} t={t} busy={busy} onClose={()=>setAttendanceStaff(null)} onCorrect={row=>{setAttendanceStaff(null);setCorrection(row);}}/>}
   {correction&&<AttendanceCorrection row={correction} onClose={()=>setCorrection(null)} onSaved={async message=>{setCorrection(null);await run(async()=>undefined,message);}}/>}
   {leaveEditor&&<LeaveEditor profile={profile} admin={admin} users={staffRows} types={leaveTypes.data ?? []} request={leaveEditor==='new'?null:leaveEditor} busy={busy} setBusy={setBusy} error={error} setError={setError} onClose={()=>setLeaveEditor(null)} onSaved={async message=>{setLeaveEditor(null);await refresh(message);}}/>}

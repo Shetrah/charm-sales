@@ -447,3 +447,33 @@ table.consolidated-table{min-width:0}
   .phone-tabs a{min-width:56px;flex-basis:56px;font-size:8px;padding-left:2px;padding-right:2px}
 }
 
+
+/* ── Identity photos, product imagery and fulfilment badges ────── */
+.badge.underProduction{background:color-mix(in srgb,var(--purple) 13%,var(--surface));color:var(--purple)}
+.badge.needsProduction{background:#d78d1615;color:#b98219}
+.photographed{overflow:hidden}
+.photographed img{display:block;width:100%;height:100%;object-fit:cover;border-radius:inherit}
+.person-avatar.photographed{background:var(--bg)}
+.media-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;width:100%;min-height:96px;padding:14px;border:1px dashed var(--border);border-radius:12px;background:var(--bg);color:var(--muted);font-size:10px;text-align:center}
+.media-placeholder small{color:var(--muted);font-size:10px}
+.media-upload{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0 4px}
+.media-button{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:10px;padding:9px 13px;font-size:11px;font-weight:650;background:var(--surface);color:var(--purple);cursor:pointer;min-height:38px}
+.media-button:hover{background:var(--soft)}
+.media-button.busy{opacity:.65;cursor:progress}
+.media-button svg{flex-shrink:0}
+.record-card-media{margin:-20px -20px 16px;border-radius:15px 15px 0 0;overflow:hidden;background:var(--bg);border-bottom:1px solid var(--border);min-height:180px}
+.record-card-media img{width:100%;height:180px;object-fit:cover}
+.record-card-media .media-placeholder{min-height:180px;border:0;border-radius:0}
+.product-media{display:flex;flex-direction:column;gap:12px;padding:16px;border:1px solid var(--border);border-radius:14px;background:var(--bg);margin-bottom:20px}
+.product-media-preview{border-radius:12px;overflow:hidden;background:var(--surface);border:1px solid var(--border)}
+.product-media-preview img{width:100%;max-height:300px;object-fit:contain}
+.product-media-preview .media-placeholder{min-height:150px;border:0;background:var(--surface)}
+.profile-identity .person-avatar.photographed{background:var(--bg)}
+@media(max-width:760px){
+ .record-card-media{margin:-17px -17px 14px;min-height:168px}
+ .record-card-media img,.record-card-media .media-placeholder{height:168px;min-height:168px}
+ .product-media{padding:13px;gap:10px}
+ .product-media-preview img{max-height:230px}
+ .media-upload{gap:8px}
+ .media-button{flex:1;justify-content:center;min-height:44px;font-size:12px}
+}
