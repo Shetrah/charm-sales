@@ -4,7 +4,9 @@ async function login(page:Page,email:string){await page.goto('/finance');await p
 const pdf={name:'receipt.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.4\n1 0 obj << /Type /Catalog >> endobj\n%%EOF')};
 test('finance workspace is responsive, role-specific, translated and keeps the dashboard accessible',async({page})=>{
  await login(page,'manager@test.invalid');
- for(const pageName of ['requests','disbursements','accountability','cashbook','expenditure','receipts','budgets','statements','accounts','audit']){await page.goto('/finance/'+pageName);await expect(page.locator('main h1')).toBeVisible();await expect(page.getByRole('alert')).toHaveCount(0);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);}
+ for(const pageName of ['requests','disbursements','accountability','cashbook','expenses','receipts','budgets','statements','accounts','audit']){await page.goto('/finance/'+pageName);await expect(page.locator('main h1')).toBeVisible();await expect(page.getByRole('alert')).toHaveCount(0);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);}
+ // The retired expenditure and operating bookmarks open the consolidated register instead of a second expense book.
+ for(const retired of ['expenditure','operating']){await page.goto('/finance/'+retired);await expect(page).toHaveURL(/\/finance\/expenses$/);await expect(page.getByRole('heading',{level:2,name:'Company expense register',exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'Record expense',exact:true})).toBeVisible();}
  await page.goto('/finance/accounts');
  await expect(page.getByRole('button',{name:'Request funds',exact:true})).toHaveCount(0);await expect(page.locator('.sidebar nav').getByText('Team',{exact:true})).toHaveCount(0);
  await page.goto('/finance/accounts');await page.getByRole('button',{name:'Verify payment recipient',exact:true}).click();await expect(page.getByRole('dialog')).toBeVisible();expect(await page.getByRole('dialog').evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);await page.getByRole('button',{name:'Cancel',exact:true}).click();

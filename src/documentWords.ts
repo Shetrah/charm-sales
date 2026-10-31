@@ -66,5 +66,10 @@ export const documentWords = {
  documentPreparedBy:['Prepared by','制单人'],
  documentAuthorisedSignatory:['Authorised signatory','授权签字'],
  documentReceivedBy:['Received by','签收人'],
- documentDeliveredBy:['Delivered by','送货人']
+ documentDeliveredBy:['Delivered by','送货人'],
+ documentSignature:['Signature','签字'],
+ documentCompanyStamp:['Company stamp','公司盖章'],
+ documentGoodsChecked:['Goods checked','货物核对'],
+ documentQuantityConfirmed:['Quantity and condition confirmed','数量与外观已确认'],
+ documentFullySettled:['Settled in full','已结清']
 };

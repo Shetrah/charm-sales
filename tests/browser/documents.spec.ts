@@ -114,6 +114,10 @@ test.describe('commercial documents on the desktop workspace',()=>{
   await expect(invoice.getByRole('tab',{name:'Delivery Note',exact:true})).toHaveCount(0);
   await expect(invoice.getByRole('button',{name:'Print',exact:true})).toBeVisible();
   expect(await invoice.evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);
+  await page.setViewportSize({width:1240,height:1900});await page.emulateMedia({media:'print'});
+  expect(await invoice.locator('.commercial-doc').evaluate(el=>{const r=el.getBoundingClientRect();return{left:r.left,right:r.right,width:r.width,vw:innerWidth,scroll:document.documentElement.scrollWidth};})).toEqual({left:0,right:1240,width:1240,vw:1240,scroll:1240});
+  await invoice.screenshot({path:'tests/.artifacts/documents-invoice-print.png',fullPage:true});
+  await page.emulateMedia({media:'screen'});await page.setViewportSize({width:1280,height:720});
   await invoice.locator('.dialog-actions').getByRole('button',{name:'Close',exact:true}).click();
   await expect(page.getByRole('alert')).toHaveCount(0);
 
@@ -153,6 +157,9 @@ test.describe('commercial documents on the desktop workspace',()=>{
   await expect(note.locator('.doc-number')).toHaveText(/^CHM-INV-/);
   expect(await note.evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);
   await note.screenshot({path:'tests/.artifacts/documents-desktop.png'});
+  await page.setViewportSize({width:1240,height:1900});await page.emulateMedia({media:'print'});
+  await note.screenshot({path:'tests/.artifacts/documents-note-print.png',fullPage:true});
+  await page.emulateMedia({media:'screen'});await page.setViewportSize({width:1280,height:720});
   await note.locator('.dialog-actions').getByRole('button',{name:'Close',exact:true}).click();
   await expect(page.getByRole('alert')).toHaveCount(0);
  });

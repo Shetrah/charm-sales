@@ -1,0 +1,143 @@
+import {test,expect,type Page} from '@playwright/test';
+import {readFileSync} from 'node:fs';
+const pdf={name:'invoice.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.4\n1 0 obj << /Type /Catalog >> endobj\n%%EOF')};
+async function login(page:Page,email:string){await page.goto('/finance');await page.getByLabel('Email address').fill(email);await page.getByLabel('Password',{exact:true}).fill('test-password-123');await page.getByRole('button',{name:'Sign in',exact:true}).click();await expect(page.locator('.sidebar-footer')).toBeVisible();}
+const registerRow=(page:Page,text:string)=>page.locator('.expense-register .desktop-records tbody tr').filter({hasText:text});
+
+test.describe('consolidated company expense register',()=>{
+ test('record once, approve, pay and still report exactly one expense',async({page,browser})=>{
+  test.skip(test.info().project.name!=='desktop','The register lifecycle writes to the shared database, so it runs once on desktop; responsive.spec.ts checks this screen at every size.');
+  test.setTimeout(180000);
+  await login(page,'officer@test.invalid');
+  const category='Browser Fleet Parts',department='Fleet Operations',purpose='Generator service and filters',recipient='Fleet Garage Limited';
+  // Master data the company spends against, created and retired through the same screen.
+  await page.goto('/finance/expenses');
+  await page.getByRole('button',{name:'Categories & departments',exact:true}).click();
+  const lists=page.getByRole('dialog'),groups=lists.locator('.expense-list-group');
+  await groups.first().getByLabel('New category').fill(category);
+  await groups.first().getByRole('button',{name:'Add',exact:true}).click();
+  await expect(groups.first().getByText(category,{exact:true})).toBeVisible();
+  await groups.nth(1).getByLabel('New department').fill(department);
+  await groups.nth(1).getByRole('button',{name:'Add',exact:true}).click();
+  const item=groups.nth(1).locator('.expense-list-items > div').filter({hasText:department});
+  await item.getByRole('button',{name:'Retire',exact:true}).click();
+  await expect(item.locator('span').first()).toHaveClass(/retired/);
+  await item.getByRole('button',{name:'Reinstate',exact:true}).click();
+  await expect(item.locator('span').first()).not.toHaveClass(/retired/);
+  await lists.getByRole('button',{name:'Done',exact:true}).click();
+  await expect(lists).toHaveCount(0);
+  // Approval needs a funded budget and payment needs a funded account; both exist before the expense does.
+  await page.goto('/finance/budgets');
+  await page.getByRole('button',{name:'Set monthly budget',exact:true}).click();
+  const budgetDialog=page.getByRole('dialog');
+  await budgetDialog.getByLabel('Expense category',{exact:true}).selectOption({label:category});
+  await budgetDialog.getByLabel('Amount (KES)',{exact:true}).fill('40000.00');
+  await budgetDialog.getByRole('button',{name:'Save',exact:true}).click();await expect(budgetDialog).toHaveCount(0);
+  await page.goto('/finance/accounts');
+  await page.getByRole('button',{name:'Add payment account',exact:true}).click();
+  const accountDialog=page.getByRole('dialog');
+  await accountDialog.getByLabel('Name',{exact:true}).fill('Expenses browser wallet');
+  await accountDialog.getByLabel('Payment method',{exact:true}).selectOption('Bank');
+  await accountDialog.getByRole('button',{name:'Save',exact:true}).click();await expect(accountDialog).toHaveCount(0);
+  await page.getByRole('button',{name:'Record opening funds',exact:true}).click();
+  const opening=page.getByRole('dialog');
+  await opening.getByLabel('Payment account',{exact:true}).selectOption({label:'Expenses browser wallet'});
+  await opening.getByLabel('Amount (KES)',{exact:true}).fill('40000.00');
+  await opening.getByLabel('Payment reference',{exact:true}).fill('OPEN-EXPENSES');
+  await opening.getByRole('checkbox').check();
+  await opening.getByRole('button',{name:'Save',exact:true}).click();await expect(opening).toHaveCount(0);
+  // One form with item lines only: the server totals them, so a typed total cannot drift from the spend.
+  await page.goto('/finance/expenses');
+  await page.getByRole('button',{name:'Record expense',exact:true}).click();
+  const form=page.getByRole('dialog');
+  await form.getByLabel('Expense category',{exact:true}).selectOption({label:category});
+  await form.getByLabel('Department',{exact:true}).selectOption({label:department});
+  await form.getByLabel('Payment method',{exact:true}).selectOption('Bank');
+  await form.getByLabel('Recipient name',{exact:true}).fill(recipient);
+  await form.getByLabel('Purpose',{exact:true}).fill(purpose);
+  const firstLine=form.locator('.expense-line').first();
+  await firstLine.getByLabel('Description',{exact:true}).fill('Heavy-duty oil filter');
+  await firstLine.getByLabel('Quantity',{exact:true}).fill('2');
+  await firstLine.getByLabel('Unit price (KES)',{exact:true}).fill('1500.50');
+  await expect(firstLine.locator('.expense-line-total')).toContainText('KES 3,001.00');
+  await form.getByRole('button',{name:'Add line',exact:true}).click();
+  const secondLine=form.locator('.expense-line').nth(1);
+  await secondLine.getByLabel('Description',{exact:true}).fill('Labour charge');
+  await secondLine.getByLabel('Unit price (KES)',{exact:true}).fill('800');
+  await secondLine.getByLabel('Discount',{exact:true}).fill('100');
+  await expect(secondLine.locator('.expense-line-total')).toContainText('KES 700.00');
+  await expect(form.locator('.expense-line-total.grand')).toContainText('KES 3,701.00');
+  await form.locator('input[type=file]').setInputFiles(pdf);
+  await form.getByRole('button',{name:'Save draft',exact:true}).click();
+  await expect(form).toHaveCount(0);
+  // A draft stays private and is never counted as company spend.
+  await expect(page.locator('.expense-drafts')).toContainText(purpose);
+  await expect(registerRow(page,purpose)).toHaveCount(0);
+  await expect(page.locator('.expense-register').getByText('KES 3,701.00')).toHaveCount(0);
+  // Reopening a draft reloads exactly what the server stored; the same idempotency key then submits it.
+  await page.locator('.expense-drafts').getByRole('button',{name:'Continue draft',exact:true}).click();
+  await expect(page.getByRole('dialog',{name:'Edit expense draft',exact:true})).toBeVisible();
+  await expect(form.getByLabel('Purpose',{exact:true})).toHaveValue(purpose);
+  await expect(form.locator('.expense-line')).toHaveCount(2);
+  await expect(form.locator('.expense-line-total.grand')).toContainText('KES 3,701.00');
+  await form.locator('.expense-line').first().getByLabel('Quantity',{exact:true}).fill('3');
+  await expect(form.locator('.expense-line-total.grand')).toContainText('KES 5,201.50');
+  await form.getByRole('button',{name:'Submit for approval',exact:true}).click();
+  await expect(form).toHaveCount(0);
+  await expect(page.locator('.expense-drafts')).toHaveCount(0);
+  await expect(registerRow(page,purpose)).toHaveCount(0);
+  const adminContext=await browser.newContext();
+  try{
+   const admin=await adminContext.newPage();await login(admin,'admin@test.invalid');
+   await admin.goto('/finance/requests');
+   await admin.locator('.desktop-records tbody tr').filter({hasText:purpose}).getByRole('button',{name:'View details',exact:true}).click();
+   await admin.getByRole('button',{name:'Review',exact:true}).click();
+   await admin.getByRole('dialog').getByLabel('Amount (KES)',{exact:true}).fill('5201.50');
+   await admin.getByRole('button',{name:'Save',exact:true}).click();
+   await expect(admin.locator('.finance-detail-title')).toContainText('Approved');
+   await admin.getByRole('dialog').getByRole('button',{name:'Close',exact:true}).click();
+   await page.goto('/finance/expenses');
+   const row=registerRow(page,purpose);
+   await expect(row).toHaveCount(1);
+   await expect(row).toContainText('KES 5,201.50');
+   await expect(row.getByText('Unpaid',{exact:true})).toBeVisible();
+   await expect(row.getByText(category,{exact:true})).toBeVisible();
+   await expect(row.getByText(department,{exact:true})).toBeVisible();
+   await expect(row.getByText(recipient,{exact:true})).toBeVisible();
+   await expect(row.getByText('Keyed by Finance',{exact:true})).toBeVisible();
+   // Paying it is a disbursement, not a second expense: another officer pays, the register still holds one line.
+   await admin.goto('/finance/disbursements');
+   await admin.locator('.desktop-records tbody tr').filter({hasText:purpose}).getByRole('button',{name:'View details',exact:true}).click();
+   await admin.getByRole('button',{name:'Record confirmed payment',exact:true}).click();
+   const pay=admin.getByRole('dialog');
+   await pay.getByLabel('Amount (KES)',{exact:true}).fill('5201.50');
+   await pay.getByLabel('Payment account',{exact:true}).selectOption({label:'Expenses browser wallet'});
+   await pay.getByLabel('Payment reference',{exact:true}).fill('EXPENSES-BROWSER-1');
+   await pay.locator('input[type=file]').setInputFiles(pdf);
+   await pay.getByRole('checkbox').check();
+   await pay.getByRole('button',{name:'Save',exact:true}).click();
+   await expect(admin.locator('.finance-detail-title')).toContainText('Fully disbursed');
+   await admin.getByRole('dialog').getByRole('button',{name:'Close',exact:true}).click();
+   await page.goto('/finance/expenses');
+   await expect(registerRow(page,purpose)).toHaveCount(1);
+   await expect(row.getByText('Paid',{exact:true})).toBeVisible();
+   await expect(row.getByText('EXPENSES-BROWSER-1',{exact:true})).toBeVisible();
+   await expect(row.getByText('Expenses browser wallet',{exact:true})).toBeVisible();
+   await expect(page.locator('.account-balance').filter({hasText:'Expenses paid'})).toContainText('KES 5,201.50');
+   // The filters and exports read the same register the screen shows.
+   await page.locator('.finance-filters').getByLabel('Paid from',{exact:true}).selectOption({label:'Expenses browser wallet'});
+   await expect(registerRow(page,purpose)).toHaveCount(1);
+   const csvPromise=page.waitForEvent('download');
+   await page.getByRole('button',{name:'CSV',exact:true}).click();
+   const text=readFileSync((await (await csvPromise).path())!,'utf8');
+   expect(text).toContain(purpose);expect(text).toContain('EXPENSES-BROWSER-1');expect(text).toMatch(/EXP-\d{8}-\d{5}/);
+   expect(text.match(new RegExp(purpose,'g'))).toHaveLength(1);
+   await page.locator('.finance-filters').getByLabel('Paid from',{exact:true}).selectOption('');
+   const pdfPromise=page.waitForEvent('download');
+   await page.getByRole('button',{name:'PDF',exact:true}).click();
+   const bytes=readFileSync((await (await pdfPromise).path())!);
+   expect(bytes.subarray(0,5).toString()).toBe('%PDF-');
+   await page.screenshot({path:`tests/.artifacts/expenses-${test.info().project.name}.png`,fullPage:true});
+  }finally{await adminContext.close().catch(()=>{});}
+ });
+});

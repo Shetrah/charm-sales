@@ -1,6 +1,6 @@
 import {test,expect} from '@playwright/test';
 const widths=[320,360,375,390,414,430,768,1024,1280];
-const routes:[string,boolean][]=[['dashboard',true],['clients',true],['orders',true],['payments',true],['visits',true],['field',true],['field?tab=requests',true],['reporting',true],['production',false],['staff',true],['audit',true],['finance',true],['finance/requests',true],['finance/accounts',true]];
+const routes:[string,boolean][]=[['dashboard',true],['clients',true],['orders',true],['payments',true],['visits',true],['field',true],['field?tab=requests',true],['reporting',true],['production',false],['staff',true],['audit',true],['finance',true],['finance/requests',true],['finance/expenses',true],['finance/accounts',true]];
 test.describe('responsive sweep',()=>{
  test.skip(({isMobile})=>isMobile,'One viewport sweep covers the required widths; tablet and mobile projects cover their own layouts.');
  test('every supported width keeps routes, drawer and dialogs usable',async({page})=>{
@@ -49,6 +49,21 @@ test.describe('responsive sweep',()=>{
    expect(actions!.y+actions!.height,`actions visible at ${width}px`).toBeLessThanOrEqual(823);
    await dialog.getByRole('button',{name:'Cancel',exact:true}).click();
    await page.screenshot({path:`tests/.artifacts/responsive-${width}.png`,fullPage:true});
+   // The expense key-in form is the finance officer's main phone screen, so it gets the same dialog geometry checks.
+   await page.goto('/finance/expenses');
+   await page.getByRole('button',{name:'Record expense',exact:true}).click();
+   const expense=page.getByRole('dialog');
+   await expect(expense).toBeVisible();
+   await expense.evaluate(el=>Promise.all(el.getAnimations().map(animation=>animation.finished)));
+   const expenseBox=await expense.boundingBox();
+   expect(expenseBox!.width,`expense dialog fit at ${width}px`).toBeLessThanOrEqual(width);
+   expect(expenseBox!.height,`expense dialog height at ${width}px`).toBeLessThanOrEqual(821);
+   const expenseFont=await expense.locator('.field input').first().evaluate(el=>parseFloat(getComputedStyle(el).fontSize));
+   expect(expenseFont,`expense input font size at ${width}px`).toBeGreaterThanOrEqual(16);
+   const expenseActions=await expense.locator('.dialog-actions').boundingBox();
+   expect(expenseActions!.y+expenseActions!.height,`expense actions visible at ${width}px`).toBeLessThanOrEqual(823);
+   await expense.getByRole('button',{name:'Cancel',exact:true}).click();
+   await page.screenshot({path:`tests/.artifacts/expenses-${width}.png`,fullPage:true});
   }
  });
 });

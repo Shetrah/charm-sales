@@ -117,10 +117,78 @@ describe.sequential('Integrated finance controls in PostgreSQL',()=>{
   await user(4);const paidProof=await proof(old,'payment',4);await db.query("select charm.finance_disburse($1,$2,$3,'15.00','OLDER-ADVANCE',$4,$5,true)",[key(),old,account,dates.fund,paidProof]);await user(3);const returnedProof=await proof(old,'refund',3);const returned=await scalar("select charm.finance_submit_accountability($1,$2,'refund','15.00','Unused funds',$3,'OLDER-REFUND',$4,$5)",[key(),old,returnedProof,account,dates.refund]);await user(4);await db.query('select charm.finance_review_accountability($1,true,null,true)',[returned]);
   const line=await scalar("select charm.finance_statement($1,$2,'OLDER-REFUND','in','15.00',$3)",[key(),account,dates.refund]);const ledger=await scalar('select id from charm.finance_ledger where accountability_id=$1',[returned]);await db.query('select charm.finance_match_statement($1,$2)',[line,ledger]);expect(await scalar("select (occurred_at at time zone 'Africa/Nairobi')::date::text from charm.finance_cashbook where id=$1",[ledger])).toBe(dates.refund);
  });
+ it('records one company expense and reports it once through every downstream register',async()=>{
+  const today=await scalar("select ((now() at time zone 'Africa/Nairobi')::date)::text");const tomorrow=await scalar("select ((now() at time zone 'Africa/Nairobi')::date+1)::text");const current=today.slice(0,7)+'-01';
+  const discs=JSON.stringify([{description:'Grinder discs',quantity:'3',unit_price:'45.00'}]);
+  const discsAndRods=JSON.stringify([{description:'Grinder discs',quantity:'3',unit_price:'45.00'},{description:'Welding rods',quantity:'10',unit_price:'12.00',discount:'5.00',tax:'3.60'}]);
+  await user(5);
+  const department=await scalar("select charm.finance_expense_settings($1,'department',$2)",[key(),JSON.stringify({name:'Quality Assurance'})]);
+  const category=await scalar("select charm.finance_expense_settings($1,'category',$2)",[key(),JSON.stringify({name:'Workshop Consumables'})]);
+  await expect(db.query("select charm.finance_expense_settings($1,'branch',$2)",[key(),JSON.stringify({name:'Not a setting'})])).rejects.toThrow('invalid');
+  await expect(db.query("select charm.finance_expense_settings($1,'category',$2)",[key(),JSON.stringify({id:999999,name:'Missing'})])).rejects.toThrow('notFound');
+  const expense=(o:{[k:string]:any})=>scalar('select charm.finance_record_expense($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)',[o.p_key??key(),o.p_id??null,o.category??category,o.department??department,o.date??today,o.purpose??'Workshop consumables',o.recipient===undefined?'Umoja Tools':o.recipient,o.payee??null,o.order??null,o.method??'Cash',o.items??discs,o.submit!==false]);
+  // A draft is keyed, replayed and revised in place; the server always re-sums the lines.
+  const draftKey=key();const first=await expense({p_key:draftKey});
+  expect(first).toBeTruthy();
+  expect(await expense({p_key:draftKey})).toBe(first);
+  const draft=await expense({submit:false});
+  expect(await scalar('select charm.finance_expense_register($1,$2,$3,$4,$5,null,$6,$7,1)',[today,today,'',category,department,'','Grinder'])).toMatchObject({total:0});
+  expect(await expense({p_id:draft,purpose:'Workshop consumables',items:discsAndRods,method:'Bank'})).toBe(draft);
+  expect(await scalar('select amount::text from charm.finance_requests where id=$1',[draft])).toBe('253.60');
+  expect(await scalar("select status from charm.finance_requests where id=$1",[draft])).toBe('pending');
+  const detail=await scalar('select charm.finance_expense_detail($1)',[draft]);
+  expect(detail.expense_number).toMatch(/^EXP-\d{8}-\d{5}$/);expect(detail.items.map((item:any)=>item.line_total)).toEqual(['135.00','118.60']);expect(detail.kind).toBe('expense');
+  await expect(expense({recipient:null})).rejects.toThrow('payeeMissing');
+  await expect(expense({date:tomorrow})).rejects.toThrow('invalid');
+  await expect(expense({purpose:'Bad rate',items:JSON.stringify([{description:'x',unit_price:'abc'}])})).rejects.toThrow('invalid');
+  await expect(expense({purpose:'No lines',items:JSON.stringify([])})).rejects.toThrow('invalid');
+  await expect(expense({purpose:'Free total',items:JSON.stringify([{description:'x',unit_price:'0'}])})).rejects.toThrow('invalidMoney');
+  await expect(expense({purpose:'Wrong method',method:'Crypto'})).rejects.toThrow('invalid');
+  await user(2);await expect(expense({purpose:'Salesperson'})).rejects.toThrow('forbidden');
+  await expect(db.query('select charm.finance_expense_detail($1)',[draft])).rejects.toThrow('forbidden');
+  // Approval, payment and cash come from the same record, and the balance is inherited rather than retyped.
+  await user(5);await db.query("select charm.finance_configure($1,'budget',$2)",[key(),JSON.stringify({category_id:category,month:current,amount:'1000.00'})]);
+  await user(1);await db.query("select charm.finance_review_request($1,'approved',null,'253.60')",[draft]);
+  await user(4);const evidence=await proof(draft,'payment',4);
+  await expect(db.query("select charm.finance_disburse($1,$2,$3,'','FLEET-0',now(),$4,true)",[key(),first,account,evidence])).rejects.toThrow('financeLocked');
+  await db.query("select charm.finance_disburse($1,$2,$3,'','FLEET-1',now(),$4,true)",[key(),draft,account,evidence]);
+  expect(await scalar("select status from charm.finance_requests where id=$1",[draft])).toBe('paid');
+  expect(await scalar("select amount::text from charm.finance_disbursements where request_id=$1",[draft])).toBe('253.60');
+  expect(await scalar("select kind from charm.finance_ledger where request_id=$1",[draft])).toBe('expense');
+  expect(await scalar("select payee_snapshot->>'name' from charm.finance_disbursements where request_id=$1",[draft])).toBe('Umoja Tools');
+  // One expense, one register line: the payment and the cash posting never become extra expenses.
+  const register=await scalar('select charm.finance_expense_register($1,$2,$3,$4,$5,null,$6,$7,1)',[today,today,'expense',category,department,'paid','']);
+  expect(register).toMatchObject({total:1});expect(register.rows[0]).toMatchObject({line_id:`R-${draft}`,amount:'253.60',paid:'253.60',outstanding:'0.00',category_name:'Workshop Consumables',department_name:'Quality Assurance',payment_status:'paid',source_type:'manual'});
+  expect(await scalar('select count(*)::int from charm.finance_expense_lines where request_id=$1',[draft])).toBe(1);
+  expect(await scalar('select count(*)::int from charm.finance_expense_lines where classification=$1 and request_id=$2',['advance',draft])).toBe(0);
+  // A posting in the legacy operating book adopts the same identity instead of becoming a second expense.
+  const entry=await scalar("select charm.finance_record_operating_entry('expense','operational','250.00',$1,'Generator servicing','GEN-1',$2)",[today,account]);
+  const linked=await scalar('select request_id from charm.finance_operating_entries where id=$1',[entry]);
+  expect(linked).toBeTruthy();
+  expect(await scalar("select jsonb_build_object('kind',kind,'status',status,'source_type',source_type,'approved_amount',approved_amount::text,'paid_count',(select count(*) from charm.finance_expense_lines where request_id=charm.finance_requests.id)) from charm.finance_requests where id=$1",[linked])).toEqual({kind:'expense',status:'paid',source_type:'operating',approved_amount:'250.00',paid_count:1});
+  expect(await scalar("select count(*)::int from charm.finance_expense_lines where description='Generator servicing'")).toBe(1);
+  await db.exec('reset role');await expect(db.query("insert into charm.finance_requests(owner_id,kind,category_id,amount,purpose,required_date,accountability_due,source_type,source_id) values(4,'expense',$1,'250.00','Re-keyed bill',$2::date,$2::date+7,'operating',$3)",[category,today,entry])).rejects.toThrow('finance_request_source');
+  await user(4);
+  const totals=await scalar('select charm.finance_expense_totals($1,$2)',[today,today]);
+  expect(totals.period).toBe(await scalar("select coalesce(sum(amount),0)::text from charm.finance_expense_lines where classification='expense' and expense_on=$1::date",[today]));
+  expect(totals.cashOutByKind.expense).toBe('503.60');
+  expect(Object.values(totals.cashOutByKind).reduce((sum:number,value:string)=>sum+Math.round(Number(value)*100),0)).toBe(Math.round(Number(totals.cashOut)*100));
+  expect(await scalar("select count(*)::int from jsonb_array_elements((select charm.finance_metadata())->'departments') where value->>'name'='Quality Assurance'")).toBe(1);
+  await user(2);await expect(db.query('select charm.finance_expense_totals($1,$2)',[today,today])).rejects.toThrow('forbidden');
+  await user(5);const scratch=await scalar("select charm.finance_expense_settings($1,'department',$2)",[key(),JSON.stringify({name:'Temporary Desk'})]);
+  await db.query("select charm.finance_expense_settings($1,'department',$2)",[key(),JSON.stringify({id:scratch,active:false})]);
+  await expect(expense({purpose:'Closed desk',department:scratch})).rejects.toThrow('invalid');
+  expect(await scalar("select count(*)::int from jsonb_array_elements((select charm.finance_metadata())->'departments') where value->>'name'='Temporary Desk'")).toBe(0);
+  // Retired lists stay manageable: the settings screen sees them even though the entry form only offers active ones.
+  const lists=await scalar('select charm.finance_expense_lists()');
+  expect(lists.categories.some((item:any)=>item.name==='Workshop Consumables'&&item.active===true)).toBe(true);
+  expect(lists.departments.filter((item:any)=>item.name==='Temporary Desk').map((item:any)=>item.active)).toEqual([false]);
+  await user(2);await expect(db.query('select charm.finance_expense_lists()')).rejects.toThrow('forbidden');
+ });
  it('reapplies the reviewed compatibility bundle without changing completed records or exact balances',async()=>{
   await db.exec('reset role');const before=await scalar("select jsonb_agg(to_jsonb(l) order by id) from charm.finance_ledger l");
   await db.exec(readFileSync('supabase/finance-upgrade-reviewed.sql','utf8'));await db.exec(readFileSync('supabase/finance-upgrade-reviewed.sql','utf8'));
-  expect(await scalar("select jsonb_agg(to_jsonb(l) order by id) from charm.finance_ledger l")).toEqual(before);expect(await scalar('select count(*)::int from charm.finance_categories')).toBe(7);expect(await scalar("select count(*)::int from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='charm' and p.proname='finance_submit_accountability'")).toBe(1);
+  expect(await scalar("select jsonb_agg(to_jsonb(l) order by id) from charm.finance_ledger l")).toEqual(before);expect(await scalar("select count(*)::int from charm.finance_categories where name in ('Travel','Accommodation','Meals','Marketing','Office','Suppliers','Other')")).toBe(7);expect(await scalar("select count(*)::int from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='charm' and p.proname='finance_submit_accountability'")).toBe(1);
  });
  it('private evidence is owner-scoped, cannot be overwritten, and CSV cells cannot execute formulas',async()=>{
   await user(3);await expect(proof(request,'receipt',3)).rejects.toThrow();await user(2);await expect(proof(request,'support',2)).rejects.toThrow();expect((await db.query("update storage.objects set name='changed'")).affectedRows).toBe(0);

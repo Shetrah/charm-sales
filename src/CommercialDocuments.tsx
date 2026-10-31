@@ -84,14 +84,16 @@ function Amounts({payload}:{payload:Row}) {
  const verified = Number(payload.payments?.verified ?? 0);
  const total = Number(invoice.total);
  const rate = Number(invoice.tax_rate ?? 0);
+ const balance = total - verified;
  const rows:[string,string,boolean][] = [
   [t('subtotalLabel'), money(invoice.subtotal,language), false],
   [`${t('vatLabel')}${rate?` · ${(rate*100).toFixed(2).replace(/\.?0+$/,'')}%`:''}`, money(invoice.tax_amount,language), false],
   [t('documentInvoiceTotal'), money(total,language), true],
   [t('paymentsReceived'), money(verified,language), false],
-  [t('balanceDue'), money(total-verified,language), true],
+  [t('balanceDue'), money(balance,language), true],
  ];
  return <div className="doc-amounts"><table><tbody>{rows.map(([label,value,strong])=><tr key={label} className={strong?'doc-total-row':''}><th>{label}</th><td>{value}</td></tr>)}</tbody></table>
+  <div className={`doc-due${balance>0?'':' doc-due-clear'}`}><span>{balance>0?t('balanceDue'):t('documentFullySettled')}</span><strong>{money(balance>0?balance:total,language)}</strong></div>
   {!!Number(payload.payments?.pending??0)&&<p className="doc-note-line">{t('documentPendingPayments')} {money(payload.payments.pending,language)}</p>}
   {(payload.credit_notes??[]).length>0&&<ul className="doc-credits">{payload.credit_notes.map((credit:Row)=><li key={credit.id}><strong>{credit.credit_note||`${t('creditNotes')} #${credit.id}`}</strong><span>{money(credit.amount,language)}</span><small>{[credit.reason,credit.lot].filter(Boolean).join(' · ')}{credit.created_at?` · ${dateText(credit.created_at,language)}`:''}</small></li>)}</ul>}
  </div>;
@@ -112,10 +114,11 @@ function PaymentInstructions({company}:{company:Row}) {
 
 function Signatures({payload,kind}:{payload:Row;kind:Kind}) {
  const {t} = usePreferences();
- const blocks:[string,string][] = kind==='invoice'
-  ? [[t('documentPreparedBy'), String(payload.salesperson?.name??'')], [t('documentAuthorisedSignatory'), ''], [t('documentReceivedBy'), '']]
-  : [[t('documentDeliveredBy'), String(payload.delivery?.driver_name??'')], [t('documentReceivedBy'), ''], [t('date'), '']];
- return <footer className="doc-sign">{blocks.map(([label,value])=><div key={label}><i>{value}</i><span>{label}</span></div>)}</footer>;
+ const sign=`${t('documentSignature')} · ${t('date')}`;
+ const blocks:[string,string,string][] = kind==='invoice'
+  ? [[t('documentPreparedBy'), String(payload.salesperson?.name??''), t('documentCompanyStamp')], [t('documentAuthorisedSignatory'), '', sign], [t('documentReceivedBy'), '', sign]]
+  : [[t('documentDeliveredBy'), String(payload.delivery?.driver_name??''), sign], [t('documentReceivedBy'), '', sign], [t('documentGoodsChecked'), '', t('documentQuantityConfirmed')]];
+ return <footer className="doc-sign">{blocks.map(([label,value,hint])=><div key={label}><i>{value}</i><span>{label}</span><small>{hint}</small></div>)}</footer>;
 }
 
 export function DocumentSheet({kind,payload}:{kind:Kind;payload:Row}) {
