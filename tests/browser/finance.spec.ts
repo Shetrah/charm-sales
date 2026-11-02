@@ -2,6 +2,7 @@ import {test,expect,type Page} from '@playwright/test';
 import {readFileSync} from 'node:fs';
 async function login(page:Page,email:string){await page.goto('/finance');await page.getByLabel('Email address').fill(email);await page.getByLabel('Password',{exact:true}).fill('test-password-123');await page.getByRole('button',{name:'Sign in',exact:true}).click();await expect(page.locator('.sidebar-footer')).toBeVisible();await expect(page.locator('main h1')).toHaveText(email==='sales@test.invalid'?'My financial requests':'Finance dashboard');}
 const pdf={name:'receipt.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.4\n1 0 obj << /Type /Catalog >> endobj\n%%EOF')};
+async function signIn(page:Page,email:string){await page.goto('/');await page.getByLabel('Email address').fill(email);await page.getByLabel('Password',{exact:true}).fill('test-password-123');await page.getByRole('button',{name:'Sign in',exact:true}).click();await expect(page.locator('.sidebar-footer')).toBeVisible();}
 test('finance workspace is responsive, role-specific, translated and keeps the dashboard accessible',async({page})=>{
  await login(page,'manager@test.invalid');
  for(const pageName of ['requests','disbursements','accountability','cashbook','expenses','receipts','budgets','statements','accounts','audit']){await page.goto('/finance/'+pageName);await expect(page.locator('main h1')).toBeVisible();await expect(page.getByRole('alert')).toHaveCount(0);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);}
@@ -38,5 +39,72 @@ test.describe('desktop finance lifecycle',()=>{
    await sales.getByRole('dialog').getByRole('button',{name:'Close',exact:true}).click();await sales.getByRole('button',{name:/Notifications/}).click();await expect(sales.locator('.notification-history')).toContainText('Funds disbursed');await sales.getByRole('button',{name:'Mark all read',exact:true}).click();await sales.getByRole('dialog').getByRole('button',{name:'Close',exact:true}).click();await expect(sales.getByRole('button',{name:'Notifications (0)',exact:true})).toBeVisible();
    await page.goto('/finance/requests');const csvDownload=page.waitForEvent('download');await page.getByRole('button',{name:'CSV',exact:true}).click();const csv=await csvDownload;expect(readFileSync((await csv.path())!,'utf8')).toContain('Delivery support 中文核销');const pdfDownload=page.waitForEvent('download');await page.getByRole('button',{name:'PDF',exact:true}).click();const downloaded=await pdfDownload;const bytes=readFileSync((await downloaded.path())!);expect(bytes.subarray(0,5).toString()).toBe('%PDF-');expect(bytes.length).toBeGreaterThan(10000);
   }finally{await Promise.allSettled([salesContext.close(),adminContext.close(),officerContext.close()]);}
+ });
+ test('an unverified recipient is verified inside the disbursement dialog, then paid',async({page,browser})=>{
+  test.setTimeout(150000);
+  await login(page,'manager@test.invalid');
+  await page.goto('/finance/accounts');
+  await page.getByRole('button',{name:'Add payment account',exact:true}).click();
+  await page.getByLabel('Name',{exact:true}).fill('Unverified recipient Bank');
+  await page.getByLabel('Payment method',{exact:true}).selectOption('Bank');
+  await page.getByRole('button',{name:'Save',exact:true}).click();
+  await page.getByRole('button',{name:'Record opening funds',exact:true}).click();
+  await page.getByLabel('Payment account',{exact:true}).selectOption({label:'Unverified recipient Bank'});
+  await page.getByLabel('Amount (KES)',{exact:true}).fill('500.00');
+  await page.getByLabel('Payment reference',{exact:true}).fill('OPEN-UNVERIFIED');
+  await page.getByRole('checkbox').check();
+  await page.getByRole('button',{name:'Save',exact:true}).click();
+  await page.goto('/finance/budgets');
+  await page.getByRole('button',{name:'Set monthly budget',exact:true}).click();
+  await page.getByLabel('Expense category',{exact:true}).selectOption({label:'Travel'});
+  await page.getByLabel('Amount (KES)',{exact:true}).fill('1000.00');
+  await page.getByRole('button',{name:'Save',exact:true}).click();
+  // No "Verify payment recipient" step: the disbursement dialog must offer it, otherwise the officer dead-ends.
+  const requesterContext=await browser.newContext(),requester=await requesterContext.newPage();
+  const adminContext=await browser.newContext(),admin=await adminContext.newPage();
+  const officerContext=await browser.newContext(),officer=await officerContext.newPage();
+  try{
+   await signIn(requester,'removable@test.invalid');await requester.goto('/finance');await expect(requester.locator('main h1')).toHaveText('My financial requests');
+   await requester.getByRole('button',{name:'Request funds',exact:true}).click();
+   await requester.getByLabel('Amount (KES)',{exact:true}).fill('80.00');
+   await requester.getByLabel('Expense category',{exact:true}).selectOption({label:'Travel'});
+   await requester.getByLabel('Purpose',{exact:true}).fill('Advance without a verified payee');
+   await requester.getByRole('dialog').locator('input[type=file]').setInputFiles(pdf);
+   await requester.getByRole('button',{name:'Save',exact:true}).click();
+   await login(admin,'admin@test.invalid');await admin.goto('/finance/requests');
+   const approvedRow=admin.locator('.desktop-records tbody tr').filter({hasText:'Advance without a verified payee'});
+   await approvedRow.getByRole('button',{name:'View details',exact:true}).click();
+   await admin.getByRole('button',{name:'Review',exact:true}).click();
+   await admin.getByRole('button',{name:'Save',exact:true}).click();
+   await expect(admin.getByRole('dialog').locator('.finance-detail-title')).toContainText('Approved');
+   await login(officer,'officer@test.invalid');await officer.goto('/finance/disbursements');
+   const row=officer.locator('.desktop-records tbody tr').filter({hasText:'Advance without a verified payee'});
+   await expect(row).toBeVisible();
+   await row.getByRole('button',{name:'View details',exact:true}).click();
+   await officer.getByRole('button',{name:'Record confirmed payment',exact:true}).click();
+   const dialog=officer.getByRole('dialog');
+   await expect(dialog.locator('.finance-payee')).toContainText('A Finance Officer must verify this recipient');
+   await expect(dialog.locator('.finance-payee-verify')).toBeVisible();
+   await expect(dialog.getByLabel('Name',{exact:true})).toHaveValue('Test Removable');
+   await dialog.getByLabel('Verified payment destination',{exact:true}).fill('M-Pesa 0700000111');
+   await officer.screenshot({path:'tests/.artifacts/disbursement-verify-recipient.png',fullPage:false});
+   await officer.setViewportSize({width:390,height:844});
+   const mobileBox=await dialog.boundingBox();
+   expect(mobileBox!.width,'disbursement dialog width at 390px').toBeLessThanOrEqual(390);
+   expect(await officer.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth),'disbursement dialog overflows at 390px').toBeLessThanOrEqual(1);
+   await officer.screenshot({path:'tests/.artifacts/disbursement-verify-mobile.png',fullPage:false});
+   await officer.setViewportSize({width:1280,height:820});
+   await dialog.getByRole('button',{name:'Save verified recipient',exact:true}).click();
+   await expect(dialog.locator('.finance-payee-verify')).toHaveCount(0);
+   await expect(dialog.locator('.finance-payee')).toContainText('M-Pesa 0700000111');
+   await dialog.getByLabel('Amount (KES)',{exact:true}).fill('80.00');
+   await dialog.getByLabel('Payment account',{exact:true}).selectOption({label:'Unverified recipient Bank'});
+   await dialog.getByLabel('Payment reference',{exact:true}).fill('UNVERIFIED-PAY-1');
+   await dialog.locator('input[type=file]').setInputFiles(pdf);
+   await dialog.getByRole('checkbox').check();
+   await dialog.getByRole('button',{name:'Save',exact:true}).click();
+   await expect(officer.getByRole('dialog').locator('.finance-detail-title')).toContainText('Fully disbursed');
+   await officer.screenshot({path:'tests/.artifacts/disbursement-recipient.png',fullPage:false});
+  }finally{await Promise.allSettled([requesterContext.close(),adminContext.close(),officerContext.close()]);}
  });
 });
