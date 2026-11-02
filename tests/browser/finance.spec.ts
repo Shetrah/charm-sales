@@ -105,6 +105,36 @@ test.describe('desktop finance lifecycle',()=>{
    await dialog.getByRole('button',{name:'Save',exact:true}).click();
    await expect(officer.getByRole('dialog').locator('.finance-detail-title')).toContainText('Fully disbursed');
    await officer.screenshot({path:'tests/.artifacts/disbursement-recipient.png',fullPage:false});
+   // Reconciliation is a derived worklist: the payment shows up without manual entry, and a bank line
+   // identical to it reconciles on import instead of duplicating the movement.
+   await officer.getByRole('dialog').getByRole('button',{name:'Close',exact:true}).click();
+   await officer.goto('/finance/statements');
+   await expect(officer.getByText('Every recorded payment and receipt appears here automatically.')).toBeVisible();
+   const payRow=officer.locator('.desktop-records tbody tr').filter({hasText:'UNVERIFIED-PAY-1'});
+   await expect(payRow).toHaveCount(1);
+   await expect(payRow).toContainText('Unverified recipient Bank');
+   await expect(payRow).toContainText('Awaiting reconciliation');
+   await officer.setViewportSize({width:390,height:844});
+   await officer.keyboard.press('Escape');
+   expect((await officer.locator('#app-sidebar').boundingBox())!.x,'navigation drawer must stay closed on the reconciliation list').toBeLessThan(0);
+   expect(await officer.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth),'statements overflows at 390px').toBeLessThanOrEqual(1);
+   const payCard=officer.locator('.finance-mobile-cards article').filter({hasText:'UNVERIFIED-PAY-1'});
+   await expect(payCard).toHaveCount(1);
+   await expect(payCard).toContainText('Awaiting reconciliation');
+   await officer.setViewportSize({width:390,height:1300});
+   await officer.screenshot({path:'tests/.artifacts/statements-autofill-mobile.png',fullPage:true});
+   await officer.setViewportSize({width:390,height:844});
+   await officer.setViewportSize({width:1600,height:1000});
+   await officer.getByRole('button',{name:'Add statement line',exact:true}).click();
+   const statement=officer.getByRole('dialog');
+   await statement.getByLabel('Payment account',{exact:true}).selectOption({label:'Unverified recipient Bank'});
+   await statement.getByLabel('Payment reference',{exact:true}).fill('UNVERIFIED-PAY-1');
+   await statement.getByLabel('Amount (KES)',{exact:true}).fill('80.00');
+   await statement.getByRole('button',{name:'Save',exact:true}).click();
+   await expect(statement).toHaveCount(0);
+   await expect(officer.locator('.desktop-records tbody tr').filter({hasText:'UNVERIFIED-PAY-1'})).toHaveCount(1);
+   await expect(officer.locator('.desktop-records tbody tr').filter({hasText:'UNVERIFIED-PAY-1'})).toContainText('Reconciled');
+   await officer.screenshot({path:'tests/.artifacts/statements-autofill.png',fullPage:false});
   }finally{await Promise.allSettled([requesterContext.close(),adminContext.close(),officerContext.close()]);}
  });
 });

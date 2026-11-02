@@ -454,6 +454,8 @@ table.consolidated-table{min-width:0}
 /* ── Identity photos, product imagery and fulfilment badges ────── */
 .badge.underProduction{background:color-mix(in srgb,var(--purple) 13%,var(--surface));color:var(--purple)}
 .badge.needsProduction{background:#d78d1615;color:#b98219}
+.badge.reconciled{background:color-mix(in srgb,var(--teal) 13%,var(--surface));color:var(--teal)}
+.badge.unmatched{background:#d78d1615;color:#b98219}
 .photographed{overflow:hidden}
 .photographed img{display:block;width:100%;height:100%;object-fit:cover;border-radius:inherit}
 .person-avatar.photographed{background:var(--bg)}
