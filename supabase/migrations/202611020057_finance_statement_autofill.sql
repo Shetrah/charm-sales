@@ -16,13 +16,13 @@ create or replace function charm.finance_register(p_view text,p_from date,p_to d
 declare a bigint:=charm.require_actor();rows jsonb;total bigint;begin
  if p_page is null or p_page<1 or p_page>10000 or p_from is null or p_to is null or p_to<p_from or p_to-p_from>3660 then raise exception 'invalid';end if;
  if p_view='requests' then
-  select count(*) into total from charm.finance_request_balances where charm.finance_access(id) and (p_owner is null or owner_id=p_owner) and (p_status in ('awaiting_payment','partial_payments','needs_accountability','outstanding','overdue') or required_date between p_from and p_to) and (p_status='' or status=p_status
+  select count(*) into total from charm.finance_request_balances where charm.finance_access(id) and (p_owner is null or owner_id=p_owner) and (p_status in ('awaiting_payment','partial_payments','needs_accountability','outstanding','overdue') or p_status='' or required_date between p_from and p_to) and (p_status='' or status=p_status
  or (p_status='awaiting_payment' and status in ('approved','part_paid'))
  or (p_status='partial_payments' and status='part_paid')
  or (p_status='needs_accountability' and status in ('part_paid','paid'))
  or (p_status='outstanding' and outstanding>0)
  or (p_status='overdue' and outstanding>0 and accountability_due<(now() at time zone 'Africa/Nairobi')::date));
-  select coalesce(jsonb_agg(to_jsonb(x)||jsonb_build_object('amount',amount::text,'approved_amount',approved_amount::text,'paid',paid::text,'spent',spent::text,'refunded',refunded::text,'outstanding',outstanding::text,'pending_accountability',pending_accountability::text)),'[]') into rows from(select * from charm.finance_request_balances where charm.finance_access(id) and (p_owner is null or owner_id=p_owner) and (p_status in ('awaiting_payment','partial_payments','needs_accountability','outstanding','overdue') or required_date between p_from and p_to) and (p_status='' or status=p_status
+  select coalesce(jsonb_agg(to_jsonb(x)||jsonb_build_object('amount',amount::text,'approved_amount',approved_amount::text,'paid',paid::text,'spent',spent::text,'refunded',refunded::text,'outstanding',outstanding::text,'pending_accountability',pending_accountability::text)),'[]') into rows from(select * from charm.finance_request_balances where charm.finance_access(id) and (p_owner is null or owner_id=p_owner) and (p_status in ('awaiting_payment','partial_payments','needs_accountability','outstanding','overdue') or p_status='' or required_date between p_from and p_to) and (p_status='' or status=p_status
  or (p_status='awaiting_payment' and status in ('approved','part_paid'))
  or (p_status='partial_payments' and status='part_paid')
  or (p_status='needs_accountability' and status in ('part_paid','paid'))

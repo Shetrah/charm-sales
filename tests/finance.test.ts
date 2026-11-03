@@ -53,6 +53,10 @@ describe.sequential('Integrated finance controls in PostgreSQL',()=>{
   await user(4);const queue=await scalar("select charm.finance_register('requests',$1,$2,'awaiting_payment',null,1)",[date,due]);expect(queue.total).toBe(2);expect(queue.rows.map((row:any)=>row.id).sort()).toEqual([request,second].sort());expect(queue.rows.every((row:any)=>['approved','part_paid'].includes(row.status))).toBe(true);
   await user(6);const own=await scalar("select charm.finance_register('requests',$1,$2,'awaiting_payment',null,1)",[date,due]);expect(own.total).toBe(0);
  });
+ it('shows requests without a date range while keeping the filtered date range intact',async()=>{
+  await user(4);const all=await scalar("select charm.finance_register('requests','2026-01-01','2026-01-31','',null,1)");expect(all.rows.some((row:any)=>row.id===request)).toBe(true);
+  const filtered=await scalar("select charm.finance_register('requests','2026-01-01','2026-01-31','pending',null,1)");expect(filtered.rows.some((row:any)=>row.id===request)).toBe(false);
+ });
  it('requires evidence and confirmation, supports partial payments and rejects conflicting retries',async()=>{
   await user(4);paidAt=await scalar('select now()::text');firstProof=await proof(request,'payment',4);disbursementKey=key();
   await expect(db.query("select charm.finance_disburse($1,$2,$3,'30.10','PART-1',$4,$5,false)",[key(),request,account,paidAt,firstProof])).rejects.toThrow('paymentConfirmationRequired');
