@@ -116,7 +116,7 @@ test.describe('consolidated company expense register',()=>{
    await pay.locator('input[type=file]').setInputFiles(pdf);
    await pay.getByRole('checkbox').check();
    await pay.getByRole('button',{name:'Save',exact:true}).click();
-   await expect(admin.locator('.finance-detail-title')).toContainText('Fully disbursed');
+   await expect(admin.locator('.finance-detail-title')).toContainText('Settled / closed');
    await admin.getByRole('dialog').getByRole('button',{name:'Close',exact:true}).click();
    await page.goto('/finance/expenses');
    await expect(registerRow(page,purpose)).toHaveCount(1);

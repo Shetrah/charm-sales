@@ -1,4 +1,5 @@
 export const shellWords = {
+ systemUserGuide:['System user guide','系统用户指南'],
  navigation:['Navigation','导航'],
  openMenu:['Open menu','打开菜单'],
  closeMenu:['Close menu','关闭菜单'],

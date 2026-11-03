@@ -105,6 +105,15 @@ describe.sequential('Integrated finance controls in PostgreSQL',()=>{
  it('supplier payouts require Admin approval and the same officer can complete payment and preserve payee snapshots',async()=>{
   await user(5);const supplier=await scalar("select charm.finance_configure($1,'payee',$2)",[key(),JSON.stringify({name:'Verified Supplier',details:'Verified supplier bank account'})]);await user(4);const id=await createRequest('40.00',supplier);await db.query('select charm.finance_submit_request($1)',[id]);await expect(db.query("select charm.finance_review_request($1,'approved',null,'40.00')",[id])).rejects.toThrow('forbidden');await user(1);await db.query("select charm.finance_review_request($1,'approved',null,'40.00')",[id]);await user(4);const doc=await proof(id,'payment',4);await db.query("select charm.finance_disburse($1,$2,$3,'40.00','SUPPLIER-1',now(),$4,true)",[key(),id,account,doc]);await db.query("select charm.finance_close_request($1,'Supplier paid in full')",[id]);expect((await scalar('select charm.finance_detail($1)',[id])).payments[0].payee_snapshot.name).toBe('Verified Supplier');
  });
+ it('closes fully disbursed direct company expenses without accountability while preserving their audit trail',async()=>{
+  await user(4);const expense=await scalar("select charm.finance_record_expense($1,null,1,null,(now() at time zone 'Africa/Nairobi')::date,'Office supplies','Local shop',null,null,'M-Pesa',$2,true)",[key(),JSON.stringify([{description:'Paper',quantity:1,unit_price:'10.00',discount:'0',tax:'0'}])]);
+  await user(1);await db.query("select charm.finance_review_request($1,'approved',null,'10.00')",[expense]);
+  await user(4);const evidence=await proof(expense,'payment',4);await db.query("select charm.finance_disburse($1,$2,$3,'10.00','OFFICE-EXP-1',now(),$4,true)",[key(),expense,account,evidence]);
+  const detail=await scalar('select charm.finance_detail($1)',[expense]);
+  expect(detail.request.status).toBe('closed');expect(detail.request.paid).toBe('10.00');expect(detail.accountability).toEqual([]);
+  expect(detail.payments).toHaveLength(1);expect(detail.history.some((event:any)=>event.action==='financeDisbursed'&&event.details.auto_closed===true)).toBe(true);
+  await expect(db.query("select charm.finance_disburse($1,$2,$3,'1.00','OFFICE-EXP-2',now(),$4,true)",[key(),expense,account,evidence])).rejects.toThrow('financeLocked');
+ });
  it('integrates customer receipts once, assigns confirmed funds and waits for a real statement to reconcile',async()=>{
   await user(2);const client=await scalar("select charm.save_client($1,'Finance client','Contact',null,'Nairobi',2)",[key()]);const orderKey=key(),order=await scalar("select charm.save_order_draft($1,null,$2,null,$3,'retailer')",[orderKey,client,JSON.stringify([{product_id:1,quantity:1,unit:'bottle',unit_price:'100.00'}])]);const contract=`orders/${order}/${key()}.pdf`;await db.query("select charm.save_order_contract($1,$2,'CT-FIN','Client signatory','Terms and conditions accepted by the client for this order.','retailer')",[key(),order]);await db.query("insert into storage.objects(bucket_id,name) values('charm-private',$1)",[contract]);await db.query("select charm.add_order_document($1,$2,'contract',$3,'finance-contract.pdf','application/pdf',2048,1)",[key(),order,contract]);await db.query('select charm.submit_order_contract($1,$2,true)',[key(),order]);await db.query('select charm.submit_order_draft($1)',[order]);await user(1);await db.query('select charm.approve_order($1,true,null,true)',[order]);await user(2);const payment=await scalar("select charm.submit_payment($1,$2,'45.75','CUSTOMER-1',now(),null)",[key(),order]);const path=`payments/${payment}/${key()}.png`;await db.query("insert into storage.objects(bucket_id,name) values('charm-private',$1)",[path]);await db.query("select charm.attach_file('payments',$1,$2)",[payment,path]);
   await user(4);await db.query('select charm.finance_verify_customer_receipt($1,true,$2)',[payment,account]);await expect(db.query('select charm.finance_verify_customer_receipt($1,true,$2)',[payment,account])).rejects.toThrow('financeLocked');expect(await scalar('select count(*)::int from charm.finance_ledger where customer_payment_id=$1',[payment])).toBe(1);expect(await scalar('select account_id from charm.finance_cashbook where customer_payment_id=$1',[payment])).toBe(account);expect(await scalar('select statement_id from charm.finance_cashbook where customer_payment_id=$1',[payment])).toBeNull();expect(await scalar('select balance from charm.order_balances where id=$1',[order])).toBe('54.25');
@@ -158,7 +167,7 @@ describe.sequential('Integrated finance controls in PostgreSQL',()=>{
   await user(4);const evidence=await proof(draft,'payment',4);
   await expect(db.query("select charm.finance_disburse($1,$2,$3,'','FLEET-0',now(),$4,true)",[key(),first,account,evidence])).rejects.toThrow('financeLocked');
   await db.query("select charm.finance_disburse($1,$2,$3,'','FLEET-1',now(),$4,true)",[key(),draft,account,evidence]);
-  expect(await scalar("select status from charm.finance_requests where id=$1",[draft])).toBe('paid');
+  expect(await scalar("select status from charm.finance_requests where id=$1",[draft])).toBe('closed');
   expect(await scalar("select amount::text from charm.finance_disbursements where request_id=$1",[draft])).toBe('253.60');
   expect(await scalar("select kind from charm.finance_ledger where request_id=$1",[draft])).toBe('expense');
   expect(await scalar("select payee_snapshot->>'name' from charm.finance_disbursements where request_id=$1",[draft])).toBe('Umoja Tools');
@@ -177,7 +186,7 @@ describe.sequential('Integrated finance controls in PostgreSQL',()=>{
   await user(4);
   const totals=await scalar('select charm.finance_expense_totals($1,$2)',[today,today]);
   expect(totals.period).toBe(await scalar("select coalesce(sum(amount),0)::text from charm.finance_expense_lines where classification='expense' and expense_on=$1::date",[today]));
-  expect(totals.cashOutByKind.expense).toBe('503.60');
+  expect(totals.cashOutByKind.expense).toBe('513.60');
   expect(Object.values(totals.cashOutByKind).reduce((sum:number,value:string)=>sum+Math.round(Number(value)*100),0)).toBe(Math.round(Number(totals.cashOut)*100));
   expect(await scalar("select count(*)::int from jsonb_array_elements((select charm.finance_metadata())->'departments') where value->>'name'='Quality Assurance'")).toBe(1);
   await user(2);await expect(db.query('select charm.finance_expense_totals($1,$2)',[today,today])).rejects.toThrow('forbidden');

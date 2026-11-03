@@ -79,4 +79,4 @@ createServer((req,res)=>{queue=queue.then(async()=>{
   const single=req.headers.accept?.includes('vnd.pgrst.object');
   send(200,single?result.rows[0]:result.rows,{'Content-Range':`${offset}-${offset+result.rows.length-1}/${count.rows[0].n}`});
  }catch(e){console.error('Test bridge:',url.pathname,e.message);send(400,{message:e.message,code:'test_error'});}
-}).catch(e=>{res.writeHead(500,cors);res.end(JSON.stringify({message:e.message}));});}).listen(54329,'127.0.0.1');
+}).catch(e=>{res.writeHead(500,cors);res.end(JSON.stringify({message:e.message}));});}).listen(Number(process.env.TEST_BACKEND_PORT??54329),'127.0.0.1');
