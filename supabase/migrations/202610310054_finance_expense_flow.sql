@@ -109,7 +109,7 @@ begin
  if r.kind='staff' and a=r.owner_id then raise exception 'selfApproval';end if;
  if p_confirmed is distinct from true or coalesce(length(trim(p_reference)),0) not between 1 and 200 or p_date is null or p_date>now() or p_date<date_trunc('minute',r.approved_at) then raise exception 'paymentConfirmationRequired';end if;
  if not exists(select 1 from charm.finance_accounts where finance_accounts.id=p_account and active) then raise exception 'invalid';end if;
- if not exists(select 1 from charm.finance_documents where finance_documents.id=p_proof and request_id=p_id and kind='payment' and uploaded_by=a) then raise exception 'proofRequired';end if;
+ if p_proof is not null and not exists(select 1 from charm.finance_documents where finance_documents.id=p_proof and request_id=p_id and kind='payment' and uploaded_by=a) then raise exception 'invalid';end if;
  select coalesce(sum(amount),0) into paid from charm.finance_disbursements where request_id=p_id;
  outstanding:=r.approved_amount-paid;
  v:=case when typed='' then outstanding else charm.finance_money(p_amount) end;
@@ -137,7 +137,7 @@ begin
  if balance<v then raise exception 'insufficientFunds';end if;
  insert into charm.finance_disbursements(request_id,account_id,amount,reference,paid_at,payee_snapshot,proof_id,recorded_by) values(p_id,p_account,v,trim(p_reference),p_date,snapshot,p_proof,a) returning finance_disbursements.id into id;
  insert into charm.finance_ledger(request_id,account_id,direction,amount,kind,reference,occurred_at,recorded_by,disbursement_id) values(p_id,p_account,'out',v,case when r.kind='staff' then 'advance' when r.kind='expense' then 'expense' else 'supplier' end,trim(p_reference),p_date,a,id);
- update charm.finance_requests set status=case when paid+v=approved_amount then 'paid' else 'part_paid' end,updated_at=now() where finance_requests.id=p_id;
+ update charm.finance_requests set status=case when paid+v=approved_amount then 'closed' else 'part_paid' end,updated_at=now() where finance_requests.id=p_id;
  perform charm.audit('financeDisbursed','finance_requests',p_id,jsonb_build_object('disbursement_id',id,'amount',v,'account_id',p_account,'reference',trim(p_reference),'recipient',snapshot->>'name','proof_id',p_proof));
  perform charm.finance_notify(p_id,'financeDisbursed','disbursement:'||id,array['admin']);
  return charm.finish(p_key,id);

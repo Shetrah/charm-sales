@@ -7,7 +7,7 @@ import { formatMoney } from './finance';
 import { nairobiDate, type Profile, type Row } from './lib/data';
 import { formatBusinessDate } from './lib/dates';
 import { cents, decimal } from './lib/money';
-import { downloadCsv, downloadPdf, financeRpc as rpc, register, uploadFinance, type FinanceFilters } from './lib/financePortal';
+import { downloadCsv, downloadPdf, financeRpc as rpc, register, type FinanceFilters } from './lib/financePortal';
 
 const registerColumns=['expense_number','reference','expense_on','description','category_name','department_name','classification','payment_status','amount','paid','outstanding','payment_method','account_name','recipient','owner_name','source_type','status'];
 const headerLabels:Record<string,string>={description:'expenseDescription',recipient:'expensePaidTo',account_name:'expensePaidFrom',payment_method:'paymentMethod'};
@@ -129,7 +129,6 @@ function ExpenseForm({scope,profile,meta,id,onClose,onSaved}:{scope:string;profi
  const detail=useQuery({queryKey:['expense-record',id],enabled:!!id,queryFn:()=>rpc<Row>('finance_expense_detail',{p_id:id!}),retry:false});
  const [head,setHead]=useState<Row>({category:String(meta.categories[0]?.id??''),department:'',date:nairobiDate(),payee:'',recipient:'',order:'',method:'Cash',purpose:''});
  const [lines,setLines]=useState<Row[]>([{description:'',quantity:'1',unit_price:'',discount:'',tax:''}]);
- const [files,setFiles]=useState<File[]>([]);
  const [busy,setBusy]=useState(false);const [error,setError]=useState<unknown>();
  const form=useRef<HTMLFormElement>(null);const submission=useRef<{body:string;key:string}|null>(null);
  useEffect(()=>{if(!detail.data)return;const record=detail.data;
@@ -148,12 +147,11 @@ function ExpenseForm({scope,profile,meta,id,onClose,onSaved}:{scope:string;profi
   if(!head.payee&&!paidTo){setError(new Error('payeeMissing'));return;}
   if(items.length===0){setError(new Error('invalid'));return;}
   const payload={p_id:id??null,p_category:Number(head.category),p_department:head.department?Number(head.department):null,p_expense_on:head.date,p_purpose:String(head.purpose),p_recipient:paidTo||null,p_payee:head.payee?Number(head.payee):null,p_order:head.order?Number(head.order):null,p_payment_method:head.method,p_items:items,p_submit:submit};
-  const body=JSON.stringify({payload,files:files.map(file=>[file.name,file.size,file.lastModified])});
+  const body=JSON.stringify({payload});
   if(submission.current?.body!==body)submission.current={body,key:crypto.randomUUID()};
   setBusy(true);setError(undefined);
   try{
    const savedId=await rpc<number>('finance_record_expense',{p_key:submission.current.key,...payload});
-   for(const file of files)await uploadFinance(savedId,'support',profile.id,file);
    onSaved();
   }catch(e){setError(e);}finally{setBusy(false);}
  }
@@ -185,7 +183,6 @@ function ExpenseForm({scope,profile,meta,id,onClose,onSaved}:{scope:string;profi
    <div className="row-actions"><button type="button" disabled={lines.length>=50} onClick={()=>setLines([...lines,{description:'',quantity:'1',unit_price:'',discount:'',tax:''}])}><Plus size={15}/>{t('addExpenseLine')}</button></div>
    <div className="expense-line-total grand"><span>{t('expenseTotal')}</span><strong>{formatMoney(decimal(total),language)}</strong></div>
    <Field label="relatedOrder"><Lookup kind="orders" scope={scope} label="relatedOrder" value={String(head.order??'')} onChange={value=>set('order',value)} required={false}/></Field>
-   <Field label="supportingDocuments"><input type="file" accept="application/pdf,image/jpeg,image/png,image/webp" multiple onChange={e=>setFiles(Array.from(e.target.files??[]))}/><small>{t('financeFileHint')}</small></Field>
    <p className="notice">{t('expenseFormHint')}</p>
    <p className="chart-note">{t('expenseDateHint')}</p>
    {!!error&&<ErrorNotice error={error}/ >}

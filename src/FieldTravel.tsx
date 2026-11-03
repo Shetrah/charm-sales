@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
-import { CheckCircle2, ChevronDown, ChevronUp, Clock3, FileText, MapPin, Plane, Plus, Receipt, Route, ShieldCheck, Trash2, X } from 'lucide-react';
+import { CheckCircle2, ChevronDown, ChevronUp, Clock3, MapPin, Plane, Plus, Receipt, Route, ShieldCheck, Trash2, X } from 'lucide-react';
 import { Dialog, ErrorNotice, Field, Loading, Status } from './components';
 import { usePreferences } from './i18n';
 import { rpc, supabase } from './lib/supabase';
@@ -9,7 +9,6 @@ import { databaseError } from './lib/errors';
 import { nairobiDate, type Profile, type Row } from './lib/data';
 import { businessDateInput, businessDateTimeInput, businessInputToInstant, formatBusinessDate, formatBusinessDateTime } from './lib/dates';
 import { formatMoney } from './finance';
-import { documentExtension, openPrivateFile, prepareDocument, uploadPrivate } from './lib/documents';
 
 const ALL_TABS = ['overview','itineraries','requests','approvals','history'] as const;
 type Tab = typeof ALL_TABS[number];
@@ -32,7 +31,6 @@ type FieldData = {
  stops: Row[];
  requests: Row[];
  items: Row[];
- documents: Row[];
  clients: Row[];
  users: Row[];
  policy: Row | null;
@@ -55,7 +53,6 @@ export default function FieldTravel({scope,profile,initial='overview'}:{scope:st
  const stops=useQuery({queryKey:[scope,'field','stops'],queryFn:async()=>{const {data,error}=await supabase!.from('plan_stops').select('*').order('plan_id').order('sequence').limit(1500);if(error)throw databaseError(error);return data as Row[];}});
  const requests=useQuery({queryKey:[scope,'field','requests'],queryFn:async()=>{const {data,error}=await supabase!.from('expenses').select('*').order('id',{ascending:false}).limit(400);if(error)throw databaseError(error);return data as Row[];}});
  const items=useQuery({queryKey:[scope,'field','items'],queryFn:async()=>{const {data,error}=await supabase!.from('travel_request_items').select('*').order('request_id').order('id').limit(1500);if(error)throw databaseError(error);return data as Row[];}});
- const documents=useQuery({queryKey:[scope,'field','documents'],queryFn:async()=>{const {data,error}=await supabase!.from('travel_request_documents').select('*').order('request_id').order('id').limit(800);if(error)throw databaseError(error);return data as Row[];}});
  const clients=useQuery({queryKey:[scope,'field','clients'],queryFn:async()=>{const {data,error}=await supabase!.from('clients').select('id,name,salesperson_id').order('name').limit(500);if(error)throw databaseError(error);return data as Row[];}});
  const users=useQuery({queryKey:[scope,'field','users'],queryFn:async()=>{const {data,error}=await supabase!.from('users').select('id,name,role').order('name').limit(200);if(error)throw databaseError(error);return data as Row[];}});
  const policy=useQuery({queryKey:[scope,'field','policy'],queryFn:async()=>{const {data,error}=await supabase!.from('travel_policy').select('*').limit(1);if(error)throw databaseError(error);return (data?.[0] as Row|undefined)??null;}});
@@ -68,18 +65,17 @@ export default function FieldTravel({scope,profile,initial='overview'}:{scope:st
   return totals;
  }});
 
- const loading=[plans,stops,requests,items,documents,clients,users,policy].find(query=>query.isPending);
- const failure=[plans,stops,requests,items,documents,clients,users,policy].find(query=>query.isError);
- const data:FieldData={scope,profile,admin,plans:plans.data??[],stops:stops.data??[],requests:requests.data??[],items:items.data??[],documents:documents.data??[],clients:clients.data??[],users:users.data??[],policy:policy.data??null,actual:finance.data??new Map()};
- const {planById,requestById,clientById,userById,docsByRequest,itemsByRequest}=useMemo(()=>{
+ const loading=[plans,stops,requests,items,clients,users,policy].find(query=>query.isPending);
+ const failure=[plans,stops,requests,items,clients,users,policy].find(query=>query.isError);
+ const data:FieldData={scope,profile,admin,plans:plans.data??[],stops:stops.data??[],requests:requests.data??[],items:items.data??[],clients:clients.data??[],users:users.data??[],policy:policy.data??null,actual:finance.data??new Map()};
+ const {planById,requestById,clientById,userById,itemsByRequest}=useMemo(()=>{
   const planById=new Map<string,Row>(data.plans.map(row=>[String(row.id),row]));
   const requestById=new Map<string,Row>(data.requests.map(row=>[String(row.id),row]));
   const clientById=new Map<string,Row>(data.clients.map(row=>[String(row.id),row]));
   const userById=new Map<string,Row>(data.users.map(row=>[String(row.id),row]));
-  const docsByRequest=new Map<string,Row[]>();for(const doc of data.documents){const key=String(doc.request_id);docsByRequest.set(key,[...(docsByRequest.get(key)??[]),doc]);}
   const itemsByRequest=new Map<string,Row[]>();for(const item of data.items){const key=String(item.request_id);itemsByRequest.set(key,[...(itemsByRequest.get(key)??[]),item]);}
-  return {planById,requestById,clientById,userById,docsByRequest,itemsByRequest};
- },[data.plans,data.requests,data.clients,data.users,data.documents,data.items]);
+  return {planById,requestById,clientById,userById,itemsByRequest};
+ },[data.plans,data.requests,data.clients,data.users,data.items]);
 
  const stopsByPlan=useMemo(()=>{const map=new Map<string,Row[]>();for(const stop of data.stops){const key=String(stop.plan_id);map.set(key,[...(map.get(key)??[]),stop]);}return map;},[data.stops]);
  const plansByRequest=useMemo(()=>{const map=new Map<string,Row[]>();for(const plan of data.plans){if(plan.travel_request_id==null)continue;const key=String(plan.travel_request_id);map.set(key,[...(map.get(key)??[]),plan]);}return map;},[data.plans]);
@@ -160,7 +156,7 @@ export default function FieldTravel({scope,profile,initial='overview'}:{scope:st
   {editor?.kind==='itinerary'&&<ItineraryEditor scope={scope} profile={profile} plan={editor.id?planById.get(String(editor.id))??null:null} planStops={editor.id?(stopsByPlan.get(String(editor.id))??[]).filter(stop=>stop.status!=='cancelled'):[]} clients={data.clients} requests={data.requests} onClose={()=>setEditor(null)} onSaved={refresh}/>}
   {editor?.kind==='request'&&<RequestEditor scope={scope} profile={profile} request={editor.id?requestById.get(String(editor.id))??null:null} items={editor.id?itemsByRequest.get(String(editor.id))??[]:[]} plans={data.plans} clients={data.clients} onClose={()=>setEditor(null)} onSaved={refresh}/>}
   {selectedPlan!=null&&planById.get(String(selectedPlan))&&<ItineraryDetail plan={planById.get(String(selectedPlan))!} stops={stopsByPlan.get(String(selectedPlan))??[]} request={planById.get(String(selectedPlan))!.travel_request_id?requestById.get(String(planById.get(String(selectedPlan))!.travel_request_id))??null:null} clientById={clientById} profile={profile} admin={admin} busy={busy} onClose={()=>setSelectedPlan(null)} onEdit={()=>{setEditor({kind:'itinerary',id:selectedPlan});setSelectedPlan(null);}} onOpenRequest={id=>{setSelectedPlan(null);setSelectedRequest(id);}} onRun={run}/>}
-  {selectedRequest!=null&&requestById.get(String(selectedRequest))&&<RequestDetail scope={scope} request={requestById.get(String(selectedRequest))!} items={itemsByRequest.get(String(selectedRequest))??[]} documents={docsByRequest.get(String(selectedRequest))??[]} plans={plansByRequest.get(String(selectedRequest))??[]} client={clientById.get(String(requestById.get(String(selectedRequest))!.client_id))} profile={profile} admin={admin} busy={busy} onClose={()=>setSelectedRequest(null)} onEdit={()=>{setEditor({kind:'request',id:selectedRequest});setSelectedRequest(null);}} onDecide={action=>setDecision({id:selectedRequest!,action})} onRun={run} onRefresh={()=>qc.invalidateQueries({queryKey:[scope,'field']})}/>}
+  {selectedRequest!=null&&requestById.get(String(selectedRequest))&&<RequestDetail scope={scope} request={requestById.get(String(selectedRequest))!} items={itemsByRequest.get(String(selectedRequest))??[]} plans={plansByRequest.get(String(selectedRequest))??[]} client={clientById.get(String(requestById.get(String(selectedRequest))!.client_id))} profile={profile} admin={admin} busy={busy} onClose={()=>setSelectedRequest(null)} onEdit={()=>{setEditor({kind:'request',id:selectedRequest});setSelectedRequest(null);}} onDecide={action=>setDecision({id:selectedRequest!,action})} onRun={run}/>}
   {decision&&requestById.get(String(decision.id))&&<DecisionDialog request={requestById.get(String(decision.id))!} action={decision.action} onClose={()=>setDecision(null)} onSaved={refresh}/>}
  </main>;
 }
@@ -249,18 +245,15 @@ function RequestEditor({scope,profile,request,items,plans,clients,onClose,onSave
  </form></Dialog>;
 }
 
-function RequestDetail({scope,request,items,documents,plans,client,profile,admin,busy,onClose,onEdit,onDecide,onRun,onRefresh}:{scope:string;request:Row;items:Row[];documents:Row[];plans:Row[];client?:Row;profile:Profile;admin:boolean;busy:boolean;onClose:()=>void;onEdit:()=>void;onDecide:(action:string)=>void;onRun:(action:()=>Promise<unknown>,message:string)=>Promise<void>;onRefresh:()=>Promise<unknown>}){
- const {t,language}=usePreferences();const [fileBusy,setFileBusy]=useState(false);const [fileError,setFileError]=useState<unknown>();const [progress,setProgress]=useState(0);const [confirmCancel,setConfirmCancel]=useState(false);
+function RequestDetail({scope,request,items,plans,client,profile,admin,busy,onClose,onEdit,onDecide,onRun}:{scope:string;request:Row;items:Row[];plans:Row[];client?:Row;profile:Profile;admin:boolean;busy:boolean;onClose:()=>void;onEdit:()=>void;onDecide:(action:string)=>void;onRun:(action:()=>Promise<unknown>,message:string)=>Promise<void>}){
+ const {t,language}=usePreferences();const [confirmCancel,setConfirmCancel]=useState(false);
  const owner=request.salesperson_id===profile.id;const editable=['draft','returned','pending'].includes(request.status)&&(owner||admin);const docsOpen=['draft','returned'].includes(request.status)&&(owner||admin);
  const total=items.reduce((sum,item)=>sum+amount(item.amount),0);
- async function open(document:Row){try{const url=await openPrivateFile(document.path,120);window.open(url,'_blank','noopener');}catch(next){setFileError(next);}}
- async function upload(file:File){setFileBusy(true);setFileError(undefined);setProgress(0);try{const prepared=await prepareDocument(file);const path=`travel/${request.id}/${crypto.randomUUID()}.${documentExtension(prepared.type)}`;await uploadPrivate(path,prepared,setProgress);await rpc('attach_travel_document',{p_id:request.id,p_path:path,p_name:prepared.name,p_type:prepared.type});await onRefresh();}catch(next){setFileError(next);}finally{setFileBusy(false);setProgress(0);}}
- async function remove(document:Row){setFileBusy(true);setFileError(undefined);try{await rpc('remove_travel_document',{p_id:request.id,p_document:document.id});await onRefresh();}catch(next){setFileError(next);}finally{setFileBusy(false);}}
  return <Dialog title={`${t('requestMeta')} · #${request.id}`} onClose={onClose}>
   <dl className="field-meta-list"><div><dt>{t('requestPurpose')}</dt><dd>{request.purpose||'—'}</dd></div><div><dt>{t('status')}</dt><dd><Status value={request.status}/></dd></div><div><dt>{t('origin')}</dt><dd>{request.origin||'—'}</dd></div><div><dt>{t('destination')}</dt><dd>{request.destination||'—'}</dd></div><div><dt>{t('departAt')}</dt><dd>{dateTime(request.depart_at,language)}</dd></div><div><dt>{t('returnAt')}</dt><dd>{dateTime(request.return_at,language)}</dd></div><div><dt>{t('requestClient')}</dt><dd>{client?.name??'—'}</dd></div><div><dt>{t('advanceRequired')}</dt><dd>{request.advance_required?t('yes'):t('no')}</dd></div><div><dt>{t('submittedAt')}</dt><dd>{dateTime(request.submitted_at,language)}</dd></div><div><dt>{t('decidedAt')}</dt><dd>{dateTime(request.decided_at,language)}</dd></div>{request.decision_reason&&<div><dt>{t('decisionReason')}</dt><dd>{request.decision_reason}</dd></div>}</dl>
   <section className="field-stops"><header><h3>{t('requestItems')}</h3><strong>{formatMoney(total,language)}</strong></header>{items.length===0?<p className="field-empty">{t('noRequests')}</p>:<div className="table-wrap"><table><thead><tr><th>{t('itemKind')}</th><th>{t('itemLabel')}</th><th>{t('itemAmount')}</th></tr></thead><tbody>{items.map(item=><tr key={item.id}><td>{t(item.kind)}</td><td>{item.label}</td><td>{formatMoney(item.amount,language)}</td></tr>)}</tbody></table></div>}</section>
   <section className="field-stops"><header><h3>{t('linkedItineraries')}</h3></header>{plans.length===0?<p className="field-empty">{t('noItineraries')}</p>:<div className="field-links read">{plans.map(plan=><span key={plan.id}>{plan.title||`#${plan.id}`} · {dateOnly(plan.date,language)} · {t(plan.status)}</span>)}</div>}</section>
-  <section className="field-stops"><header><h3>{t('requestDocuments')}</h3></header><p className="field-note">{t('requestDocumentHint')}</p>{documents.length===0?<p className="field-empty">{t('noDocuments')}</p>:<ul className="field-doc-list">{documents.map(document=><li key={document.id}><FileText size={16}/><div><strong>{document.file_name}</strong><small>{document.content_type||'—'}</small></div><button type="button" onClick={()=>void open(document)}>{t('openDocument')}</button>{docsOpen&&<button type="button" aria-label={t('removeDocument')} disabled={fileBusy} onClick={()=>void remove(document)}><Trash2 size={15}/></button>}</li>)}</ul>}{docsOpen&&<Field label="uploadDocument"><input type="file" disabled={fileBusy} accept="image/jpeg,image/png,image/webp,application/pdf" onChange={event=>{const file=event.target.files?.[0];event.target.value='';if(file)void upload(file);}}/></Field>}{fileBusy&&<p className="field-note" role="status">{t('uploadingDocument')} {progress}%</p>}{!!fileError&&<ErrorNotice error={fileError}/>}</section>
+
   {request.notes&&<p className="field-note">{request.notes}</p>}
   <div className="dialog-actions">
    {editable&&<button type="button" disabled={busy} onClick={onEdit}>{t('editTravelRequest')}</button>}

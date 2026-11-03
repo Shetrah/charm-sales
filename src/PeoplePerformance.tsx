@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { CalendarCheck, CalendarDays, Coins, Download, FileText, Pencil, Plus, Search, ShieldCheck, Trash2, UserRound, Users, X } from 'lucide-react';
+import { CalendarCheck, CalendarDays, Coins, Download, Pencil, Plus, Search, ShieldCheck, Trash2, UserRound, Users, X } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { Dialog, ErrorNotice, Field, Loading, Status } from './components';
 import { usePreferences } from './i18n';
@@ -9,7 +9,7 @@ import { databaseError } from './lib/errors';
 import { nairobiDate, type Profile, type Row } from './lib/data';
 import { formatBusinessDate } from './lib/dates';
 import { formatMoney } from './finance';
-import { documentExtension, openPrivateFile, prepareDocument, uploadPrivate } from './lib/documents';
+
 import { StaffDetail } from './Team';
 
 const TABS = ['team','attendance','leave','commissions'] as const;
@@ -203,7 +203,6 @@ export default function PeoplePerformance({scope,profile}:{scope:string;profile:
        <p>{row.reason}</p>
        {row.decision_reason&&<small className="people-decision">{t('decisionReason')}: {row.decision_reason}</small>}
        <div className="people-actions">
-        {row.document_path&&<button type="button" onClick={async()=>{try{const url=await openPrivateFile(row.document_path,120);window.open(url,'_blank','noopener');}catch(next){setError(next);}}}><FileText size={15}/>{t('supportingDocument')}</button>}
         {editable&&<button type="button" onClick={()=>setLeaveEditor(row)}><Pencil size={15}/>{t('editLeaveRequest')}</button>}
         {row.status==='draft'&&<button type="button" className="primary" disabled={busy} onClick={()=>run(()=>rpc('submit_leave_request',{p_id:row.id}),'leaveSubmittedMsg')}>{t('submitLeave')}</button>}
         {['draft','pending'].includes(row.status)&&<button type="button" disabled={busy} onClick={()=>run(()=>rpc('cancel_leave_request',{p_id:row.id}),'leaveCancelledMsg')}><X size={15}/>{t('cancelLeave')}</button>}
@@ -295,35 +294,17 @@ function PolicyEditor({policy,busy,onSave}:{policy:Row|null;busy:boolean;onSave:
 }
 
 function LeaveEditor({profile,admin,users,types,request,busy,setBusy,error,setError,onClose,onSaved}:{profile:Profile;admin:boolean;users:Row[];types:Row[];request:Row|null;busy:boolean;setBusy:(value:boolean)=>void;error:unknown;setError:(value:unknown)=>void;onClose:()=>void;onSaved:(message:string)=>Promise<void>}) {
- const {t} = usePreferences(); const [owner,setOwner] = useState(request?String(request.salesperson_id):String(profile.id)); const [type,setType] = useState(request?String(request.leave_type_id):String(types[0]?.id ?? '')); const [start,setStart] = useState(request?.start_date ?? nairobiDate()); const [end,setEnd] = useState(request?.end_date ?? nairobiDate()); const [reason,setReason] = useState(request?.reason ?? ''); const [document,setDocument] = useState<string>(request?.document_path ?? ''); const [file,setFile] = useState<File|null>(null); const [key] = useState(()=>crypto.randomUUID()); const [fileBusy,setFileBusy] = useState(false); const [localError,setLocalError] = useState<unknown>();
- const selectedType = types.find(item=>String(item.id)===type); const days = workingDaysBetween(start,end);
- async function save(submit: boolean) {
-  setBusy(true); setLocalError(undefined); setError(undefined);
-  try {
-   let path = document || null;
-   if (file) { setFileBusy(true); const prepared = await prepareDocument(file); path = `leave/${owner}/${crypto.randomUUID()}.${documentExtension(prepared.type)}`; await uploadPrivate(path, prepared); setFileBusy(false); }
-   if (selectedType?.requires_document && !path) throw new Error('documentRequired');
-   const id = await rpc<number>('save_leave_request',{p_key:key,p_id:request?.id ?? null,p_type:Number(type),p_start:start,p_end:end,p_reason:reason.trim(),p_document:path,p_user:admin?Number(owner):null});
-   if (submit) await rpc('submit_leave_request',{p_id:id});
-   await onSaved(submit?'leaveSubmittedMsg':'saved');
-  } catch (next) { setLocalError(next); }
-  finally { setFileBusy(false); setBusy(false); }
- }
- return <Dialog title={request?t('editLeaveRequest'):t('newLeaveRequest')} onClose={onClose}>
-  <form className="field-form" noValidate onSubmit={event=>{event.preventDefault();void save(false);}}>
-   {admin&&!request&&<Field label="selectStaff"><select required value={owner} onChange={event=>setOwner(event.target.value)}>{users.map(person=><option key={person.id} value={person.id}>{person.name} · {person.staff_code}</option>)}</select></Field>}
-   <div className="field-form-grid"><Field label="leaveType"><select required value={type} onChange={event=>setType(event.target.value)}><option value="">{t('choose')}</option>{types.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}</select></Field><Field label="leaveDaysLabel"><input readOnly value={`${days}`} /></Field><Field label="leaveStart"><input required type="date" value={start} onChange={event=>setStart(event.target.value)}/></Field><Field label="leaveEnd"><input required type="date" min={start} value={end} onChange={event=>setEnd(event.target.value)}/></Field></div>
-   <Field label="leaveReason"><textarea required minLength={3} maxLength={2000} value={reason} onChange={event=>setReason(event.target.value)}/></Field>
-   <Field label="supportingDocument"><input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={event=>{setFile(event.target.files?.[0] ?? null);event.target.value='';}}/><small>{t('leaveDocumentHint')}</small></Field>
-   {document&&<p className="field-note">{t('documentAttached')}: {document.split('/').pop()}</p>}
-   {fileBusy&&<p className="field-note" role="status">{t('loading')}</p>}
-   {selectedType?.requires_document&&!document&&!file&&<p className="field-note">{t('documentRequired')}</p>}
-   {!!localError&&<ErrorNotice error={localError}/>}{!!error&&<ErrorNotice error={error}/>}
-   <div className="dialog-actions"><button type="button" onClick={onClose}>{t('cancel')}</button><button type="button" disabled={busy||fileBusy||days<=0} onClick={()=>void save(false)}>{t('saveDraft')}</button><button type="button" className="primary" disabled={busy||fileBusy||days<=0} onClick={()=>void save(true)}>{t('submitLeave')}</button></div>
-  </form>
- </Dialog>;
+ const {t} = usePreferences(); const [owner,setOwner] = useState(request?String(request.salesperson_id):String(profile.id)); const [type,setType] = useState(request?String(request.leave_type_id):String(types[0]?.id ?? '')); const [start,setStart] = useState(request?.start_date ?? nairobiDate()); const [end,setEnd] = useState(request?.end_date ?? nairobiDate()); const [reason,setReason] = useState(request?.reason ?? ''); const [key] = useState(()=>crypto.randomUUID()); const [localError,setLocalError] = useState<unknown>();
+ const days = workingDaysBetween(start,end);
+ async function save(submit:boolean){setBusy(true);setLocalError(undefined);setError(undefined);try{const id=await rpc<number>('save_leave_request',{p_key:key,p_id:request?.id??null,p_type:Number(type),p_start:start,p_end:end,p_reason:reason.trim(),p_document:null,p_user:admin?Number(owner):null});if(submit)await rpc('submit_leave_request',{p_id:id});await onSaved(submit?'leaveSubmittedMsg':'saved');}catch(next){setLocalError(next);}finally{setBusy(false);}}
+ return <Dialog title={request?t('editLeaveRequest'):t('newLeaveRequest')} onClose={onClose}><form className="field-form" noValidate onSubmit={event=>{event.preventDefault();void save(false);}}>
+  {admin&&!request&&<Field label="selectStaff"><select required value={owner} onChange={event=>setOwner(event.target.value)}>{users.map(person=><option key={person.id} value={person.id}>{person.name} · {person.staff_code}</option>)}</select></Field>}
+  <div className="field-form-grid"><Field label="leaveType"><select required value={type} onChange={event=>setType(event.target.value)}><option value="">{t('choose')}</option>{types.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}</select></Field><Field label="leaveDaysLabel"><input readOnly value={`${days}`}/></Field><Field label="leaveStart"><input required type="date" value={start} onChange={event=>setStart(event.target.value)}/></Field><Field label="leaveEnd"><input required type="date" min={start} value={end} onChange={event=>setEnd(event.target.value)}/></Field></div>
+  <Field label="leaveReason"><textarea required minLength={3} maxLength={2000} value={reason} onChange={event=>setReason(event.target.value)}/></Field>
+  {!!localError&&<ErrorNotice error={localError}/>} {!!error&&<ErrorNotice error={error}/>}
+  <div className="dialog-actions"><button type="button" onClick={onClose}>{t('cancel')}</button><button type="button" disabled={busy||days<=0} onClick={()=>void save(false)}>{t('saveDraft')}</button><button type="button" className="primary" disabled={busy||days<=0} onClick={()=>void save(true)}>{t('submitLeave')}</button></div>
+ </form></Dialog>;
 }
-
 function LeaveDecision({request,onClose,onSaved,busy,error}:{request:Row;onClose:()=>void;onSaved:(message:string)=>Promise<void>;busy:boolean;error:unknown}) {
  const {t} = usePreferences(); const [decision,setDecision] = useState('approve'); const [reason,setReason] = useState(''); const [localError,setLocalError] = useState<unknown>(); const [working,setWorking] = useState(false);
  async function submit(){setLocalError(undefined);if(decision==='reject'&&reason.trim().length<3){setLocalError(new Error('reasonRequired'));return;}setWorking(true);try{await rpc('decide_leave_request',{p_id:request.id,p_decision:decision,p_reason:reason.trim()});await onSaved(decision==='approve'?'leaveApprovedMsg':'leaveRejectedMsg');}catch(next){setLocalError(next);}finally{setWorking(false);}}
