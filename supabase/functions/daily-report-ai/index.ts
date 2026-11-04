@@ -1,6 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
-const origins=(Deno.env.get('ALLOWED_ORIGINS')??'http://localhost:5173,http://127.0.0.1:5173,https://sales.charmkenya.com').split(',').map(value=>value.trim().replace(/\/$/,''));
+const origins=[...new Set([...(Deno.env.get('ALLOWED_ORIGINS')??'').split(',').map(value=>value.trim().replace(/\/$/,'')), 'http://localhost:5173','http://127.0.0.1:5173','https://sales.charmkenya.com','https://charm-sales.vercel.app'].filter(Boolean))];
 function allowed(origin:string){if(!origin||origins.includes(origin))return true;try{const url=new URL(origin);return url.protocol==='https:'&&(url.hostname==='charmkenya.com'||url.hostname.endsWith('.charmkenya.com'));}catch{return false;}}
 function deterministicSummary(day:string,visits:Array<Record<string,unknown>>,language:'en'|'zh'){
  const outcomes=new Map<string,number>();
