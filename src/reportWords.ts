@@ -1,6 +1,7 @@
 export const reportWords = {
  aiDailyReport:['AI daily field report','AI每日外勤报告'],autoPreparedFromVisits:['Automatically prepared from submitted client visit reports','根据已提交的客户拜访报告自动生成'],regenerate:['Refresh summary','刷新摘要'],
  dailyReportUnavailable:['The daily report service could not load visit data. Refresh the page or ask an administrator to check the deployed daily-report-ai function and database permissions.','每日报告服务无法读取拜访数据。请刷新页面，或请管理员检查已部署的 daily-report-ai 函数和数据库权限。'],
+ dailyReportDataFailed:['The daily report could not retrieve visit records. Apply migration 202611040069_daily_report_data_rpc.sql, then redeploy the daily-report-ai function.','每日摘要无法读取拜访记录。请应用迁移 202611040069_daily_report_data_rpc.sql，然后重新部署 daily-report-ai 函数。'],
  noDailyReports:['There are no submitted visit reports for this date.','此日期没有已提交的拜访报告。'],
  originNotAllowed:['This portal address is not allowed to use the daily report service. Ask an administrator to add it to the function’s allowed origins.','此门户地址未获准使用每日报告服务。请管理员将其添加到函数允许的来源中。'],
  reporting:['Reports','报告'],
