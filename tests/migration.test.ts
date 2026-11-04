@@ -49,6 +49,14 @@ describe.sequential('Supabase PostgreSQL migration and permissions',()=>{
   await expect(db.query('select charm.set_price(1,\'12.00\')')).rejects.toThrow('forbidden');
   await expect(db.query("select charm.save_client($1,'Intrusion','X',null,'Nairobi',3)",[key()])).rejects.toThrow('forbidden');
  });
+ it('lets each staff member update only their own profile through the audited RPC',async()=>{
+  await asUser(a);
+  await db.query("select charm.update_own_profile('Sales A Updated','0712345678','Nairobi')");
+  expect(await scalar('select name from charm.users where id=2')).toBe('Sales A Updated');
+  expect(await scalar('select phone from charm.users where id=2')).toBe('0712345678');
+  await expect(db.query("update charm.users set name='No direct write' where id=2")).rejects.toThrow();
+  expect(await scalar("select count(*)::int from charm.audit_logs where action='ownProfileUpdated' and entity_id=2")).toBe(1);
+ });
  it('creates exact multi-line orders and protects concurrent retry payload identity',async()=>{
   await asUser(a);
   const k=key(),items=JSON.stringify([{product_id:1,quantity:2,unit:'bottle',unit_price:'12.35'},{product_id:2,quantity:3,unit:'carton',unit_price:'8.20'}]);

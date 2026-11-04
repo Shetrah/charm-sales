@@ -18,18 +18,24 @@ Deno.serve(async req=>{
  if(roleError){const missing=['PGRST202','PGRST203','PGRST205'].includes(roleError.code??'');return reply(missing?503:403,{error:missing?'staffMigrationsMissing':'forbidden'});}
  if(!admin)return reply(403,{error:'forbidden'});
  try{
-  const {name,email,role,password}=await req.json();
-  if(typeof name!=='string'||!name.trim()||name.length>200||typeof email!=='string'||email.length>254||!/^\S+@\S+\.\S+$/.test(email)||!['admin','salesperson','finance_officer'].includes(role)||typeof password!=='string'||password.length<12||password.length>128)return reply(422,{error:'invalid'});
+  const {name,email,role,password,staffCode}=await req.json();
+  if(typeof name!=='string'||!name.trim()||name.length>200)return reply(422,{error:'staffNameRequired'});
+  if(typeof email!=='string'||email.length>254||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return reply(422,{error:'staffEmailInvalid'});
+  if(!['admin','salesperson','finance_officer','logistics_manager'].includes(role))return reply(422,{error:'invalid'});
+  if(typeof password!=='string'||password.length<12||password.length>128)return reply(422,{error:'staffPasswordTooShort'});
+  if(typeof staffCode!=='string'||!/^[A-Za-z0-9][A-Za-z0-9_-]{0,19}$/.test(staffCode.trim()))return reply(422,{error:'staffCodeInvalid'});
   const service=createClient(url,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{db:{schema:'charm'},auth:{persistSession:false}});
   // Credentials go directly to Supabase Auth. Never log or store the password in business tables.
   const created=await service.auth.admin.createUser({email:email.trim().toLowerCase(),password,email_confirm:true});
   if(created.error||!created.data.user)return reply(409,{error:['email_exists','user_already_exists'].includes(created.error?.code??'')?'staffExists':'linkFailed'});
-  const linked=await service.rpc('link_staff',{p_actor:user.id,p_auth:created.data.user.id,p_name:name,p_email:email,p_role:role});
+  const linked=await service.rpc('link_staff',{p_actor:user.id,p_auth:created.data.user.id,p_name:name,p_email:email,p_role:role,p_staff_code:staffCode.trim().toUpperCase()});
   if(linked.error){
    // Preserve Auth on an uncertain RPC response. Deletion could race a committed staff link.
    // An unmapped account cannot access company data; Admin can reconcile the verified email.
+   if(linked.error.message?.includes('staffCodeExists')){await service.auth.admin.deleteUser(created.data.user.id);return reply(409,{error:'staffCodeExists'});}
    const missing=['PGRST202','PGRST203','PGRST205','42883'].includes(linked.error.code??'');
-   return reply(missing?503:409,{error:missing?'staffMigrationsMissing':linked.error.code==='42501'?'forbidden':'linkFailed'});
+   const code=missing?'staffMigrationsMissing':linked.error.code==='42501'?'forbidden':'linkFailed';
+   return reply(missing?503:409,{error:code});
   }
   return reply(200,{id:linked.data});
  }catch{return reply(503,{error:'staffServiceUnavailable'});}

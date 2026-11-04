@@ -1,5 +1,10 @@
 export const peopleWords = {
  peopleTitle:['People & Performance','人员与绩效'],
+ staffsTitle:['Staffs & Performance','员工与绩效'],
+ staffsNav:['Staffs','员工'],
+ staffsIntro:['Staff profiles, Staff IDs, assignments, attendance, leave and commissions in one workspace.','在一个工作区管理员工档案、员工编号、分配、考勤、休假和佣金。'],
+ staffIdAssignHint:['Assign a unique Staff ID. It is shown across the portal and stays with this staff record.','请分配唯一员工编号。该编号会显示在门户各处，并与此员工记录绑定。'],
+ staffCodeExists:['That Staff ID is already assigned. Enter a different ID.','该员工编号已被使用，请输入其他编号。'],
  peopleNav:['People','人员'],
  peopleIntro:['Staff identities, customer ownership, attendance, leave and commissions in one connected workspace.','集中管理员工身份、客户归属、考勤、休假和佣金。'],
  teamPerformance:['Team','团队'],
@@ -39,6 +44,7 @@ export const peopleWords = {
  recentOrders:['Recent orders','最近订单'],
  recentVisits:['Recent visits','最近拜访'],
  monthlySales:['Monthly confirmed sales','本月已确认销售额'],
+ performancePeriod:['Performance period','业绩统计周期'],weekPeriod:['This week','本周'],monthPeriod:['This month','本月'],quarterPeriod:['This quarter','本季度'],yearPeriod:['This year','今年'],customPeriod:['Custom range','自定义范围'],periodFrom:['From','开始日期'],periodTo:['To','结束日期'],periodSales:['Sales in period','期间销售额'],
  lifetimeSalesPp:['Lifetime confirmed sales','累计已确认销售额'],
  pendingOrdersPp:['Pending orders','待审核订单'],
  visitsPp:['Recorded visits','已记录拜访'],

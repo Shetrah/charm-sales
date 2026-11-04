@@ -2,7 +2,7 @@ import { nairobiDate } from './dates';
 export { nairobiDate } from './dates';
 import { supabase } from './supabase';
 export type Row=Record<string,any>;
-export type Profile={id:number;name:string;role:'admin'|'salesperson'|'finance_officer'|'logistics_manager';email:string;active:boolean;staff_code?:string;photo_path?:string|null};
+export type Profile={id:number;name:string;role:'admin'|'salesperson'|'finance_officer'|'logistics_manager';email:string;active:boolean;staff_code?:string;photo_path?:string|null;phone?:string|null;territory?:string|null};
 export const tables:Record<string,string>={clients:'clients',products:'products',orders:'orders',payments:'payments',balances:'order_balances',visits:'visits',plans:'plans',expenses:'expenses',reports:'reports',routes:'workdays',staff:'team_directory',audit:'audit_logs'};
 export const staffRoles=['salesperson','admin','finance_officer','logistics_manager'] as const;
 export const columns:Record<string,string[]>={
@@ -11,6 +11,7 @@ const searchColumns:Record<string,string[]>={clients:['name','contact','phone','
 export async function list(section:string,page:number,search:string,status:string,date:string,owner='',attention='') {
  if(!supabase) throw new Error('configuration');
  let query=supabase.from(tables[section]).select(section==='staff'?'id,name,email,role,active,staff_code,phone,territory,photo_path':'*',{count:'exact'}).order('id',{ascending:false}).range((page-1)*20,page*20-1);
+ if(section==='balances'&&owner)query=query.eq('salesperson_id',owner);
  const clean=search.replace(/[,%().\\]/g,' ').trim().slice(0,100);
  if(clean && searchColumns[section]) query=query.or(searchColumns[section].map(c=>`${c}.ilike.%${clean}%`).join(','));
  else if(clean && /^\d+$/.test(clean)) query=query.eq('id',clean);

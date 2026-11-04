@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { CalendarCheck, CalendarDays, Coins, Download, Pencil, Plus, Search, ShieldCheck, Trash2, UserRound, Users, X } from 'lucide-react';
+import { CalendarCheck, CalendarDays, Coins, Download, Pencil, Plus, Search, ShieldCheck, Trash2, UserRound, Users, X, UserPlus, ArrowUpRight } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { Dialog, ErrorNotice, Field, Loading, Status } from './components';
 import { usePreferences } from './i18n';
@@ -10,14 +10,23 @@ import { nairobiDate, type Profile, type Row } from './lib/data';
 import { formatBusinessDate } from './lib/dates';
 import { formatMoney } from './finance';
 
-import { StaffDetail } from './Team';
+import { StaffAvatar, StaffDetail } from './Team';
+import { RecordForm } from './workflows';
 
 const TABS = ['team','attendance','leave','commissions'] as const;
 type Tab = typeof TABS[number];
 const ATTENDANCE_STATUS = ['full','partial','incomplete','absent','leave'];
-const LEAVE_MONTH = () => nairobiDate().slice(0,7);
 const firstOfMonth = (date: string) => `${date.slice(0,7)}-01`;
-const endOfMonth = (month: string) => new Date(Date.UTC(Number(month.slice(0,4)), Number(month.slice(5,7)), 0)).toISOString().slice(0,10);
+type PerformancePeriod='week'|'month'|'quarter'|'year'|'custom';
+function performanceDates(period:PerformancePeriod,today:string,from:string,to:string){
+ if(period==='custom')return {from,to};
+ const date=new Date(`${today}T00:00:00Z`);let start=new Date(date);let end=new Date(date);
+ if(period==='week'){const offset=(date.getUTCDay()+6)%7;start.setUTCDate(date.getUTCDate()-offset);end=new Date(start);end.setUTCDate(start.getUTCDate()+6);}
+ if(period==='month'){start.setUTCDate(1);}
+ if(period==='quarter'){const firstMonth=Math.floor(date.getUTCMonth()/3)*3;start=new Date(Date.UTC(date.getUTCFullYear(),firstMonth,1));}
+ if(period==='year'){start=new Date(Date.UTC(date.getUTCFullYear(),0,1));}
+ return {from:start.toISOString().slice(0,10),to:end.toISOString().slice(0,10)};
+}
 const amount = (value: unknown) => Number(value ?? 0) || 0;
 const sum = (rows: Row[], key: string) => rows.reduce((total, row) => total + amount(row[key]), 0);
 const commissionWord: Record<string,string> = { earned:'commissionEarned', approved:'commissionApproved', paid:'commissionPaid', reversed:'commissionReversed', adjusted:'commissionAdjusted' };
@@ -46,6 +55,14 @@ function CommissionBadge({value}:{value:string}) {
  const {t} = usePreferences();
  return <span className={`badge ${value}`}>{t(commissionWord[value] ?? value)}</span>;
 }
+function PerformancePeriodFilter({t,language,period,onPeriod,from,to,onFrom,onTo}:{t:(key:string)=>string;language:'en'|'zh';period:PerformancePeriod;onPeriod:(value:PerformancePeriod)=>void;from:string;to:string;onFrom:(value:string)=>void;onTo:(value:string)=>void}){
+ const range=performanceDates(period,nairobiDate(),from,to);
+ return <div className="performance-period-filter">
+  <Field label="performancePeriod"><select value={period} onChange={event=>onPeriod(event.target.value as PerformancePeriod)}>{(['week','month','quarter','year','custom'] as const).map(value=><option key={value} value={value}>{t(`${value}Period`)}</option>)}</select></Field>
+  {period==='custom'&&<><Field label="periodFrom"><input type="date" required value={from} max={to} onChange={event=>onFrom(event.target.value)}/></Field><Field label="periodTo"><input type="date" required value={to} min={from} onChange={event=>onTo(event.target.value)}/></Field></>}
+  <span className="people-period">{formatBusinessDate(range.from,language)} → {formatBusinessDate(range.to,language)}</span>
+ </div>;
+}
 export default function PeoplePerformance({scope,profile}:{scope:string;profile:Profile}) {
  const {t,language} = usePreferences(); const qc = useQueryClient(); const admin = profile.role === 'admin';
  const available: Tab[] = admin ? [...TABS] : TABS.filter(value => value !== 'team');
@@ -53,9 +70,10 @@ export default function PeoplePerformance({scope,profile}:{scope:string;profile:
  const requested = params.get('tab');
  const [tab,setTab] = useState<Tab>(requested && (TABS as readonly string[]).includes(requested) && available.includes(requested as Tab) ? requested as Tab : admin ? 'team' : 'attendance');
  const today = nairobiDate();
- const [from,setFrom] = useState(firstOfMonth(today)); const [to,setTo] = useState(today);
- const [range,setRange] = useState({ from: firstOfMonth(today), to: today });
- const [month,setMonth] = useState(LEAVE_MONTH());
+ const [range,setRange] = useState({from:firstOfMonth(today),to:today});
+ const [performancePeriod,setPerformancePeriod] = useState<PerformancePeriod>('month');
+ const [performanceFrom,setPerformanceFrom] = useState(firstOfMonth(today));
+ const [performanceTo,setPerformanceTo] = useState(today);
  const [year,setYear] = useState(Number(today.slice(0,4)));
  const [balanceUser,setBalanceUser] = useState('');
  const [attendanceStaff,setAttendanceStaff] = useState<Row|null>(null);
@@ -65,18 +83,24 @@ export default function PeoplePerformance({scope,profile}:{scope:string;profile:
  const [ruleEditor,setRuleEditor] = useState<Row|'new'|null>(null);
  const [commissionAction,setCommissionAction] = useState<{entry:Row;status:string}|null>(null);
  const [staffProfile,setStaffProfile] = useState<Row|null>(null);
+ const [addStaff,setAddStaff] = useState(false);
  const [busy,setBusy] = useState(false); const [error,setError] = useState<unknown>(); const [notice,setNotice] = useState('');
  const [search,setSearch] = useState(''); const [attendanceFilter,setAttendanceFilter] = useState('');
 
  const users = useQuery({queryKey:[scope,'people','users'],queryFn:async()=>{
-  const {data,error} = await supabase!.from('users').select('id,name,email,role,active,phone,territory,staff_code').order('name').limit(300);
+  const {data,error} = await supabase!.from('users').select('id,name,email,role,active,phone,territory,staff_code,photo_path').order('name').limit(300);
+  if (error) throw databaseError(error); return (data ?? []) as Row[];
+ }});
+ const directory = useQuery({queryKey:[scope,'people','staff-directory'],enabled:admin,queryFn:async()=>{
+  const {data,error} = await supabase!.from('team_directory').select('id,name,email,role,active,phone,territory,staff_code,photo_path').order('name').limit(300);
   if (error) throw databaseError(error); return (data ?? []) as Row[];
  }});
  const clients = useQuery({queryKey:[scope,'people','clients'],enabled:admin,queryFn:async()=>{
   const {data,error} = await supabase!.from('clients').select('id,name,location,salesperson_id,lifecycle_status').order('name').limit(800);
   if (error) throw databaseError(error); return (data ?? []) as Row[];
  }});
- const monthly = useQuery({queryKey:[scope,'people','monthly',month],enabled:admin && tab === 'team',queryFn:()=>rpc<Row>('monthly_summary',{p_month:`${month}-01`})});
+ const performanceRange=performanceDates(performancePeriod,today,performanceFrom,performanceTo);
+ const salesSummary = useQuery({queryKey:[scope,'people','sales',performanceRange.from,performanceRange.to],enabled:admin&&tab==='team',queryFn:()=>rpc<Row>('people_sales_summary',{p_from:performanceRange.from,p_to:performanceRange.to})});
  const attendance = useQuery({queryKey:[scope,'people','attendance',range.from,range.to],queryFn:()=>rpc<Row>('attendance_report',{p_from:range.from,p_to:range.to})});
  const leaveTypes = useQuery({queryKey:[scope,'people','leave-types'],queryFn:async()=>{
   const {data,error} = await supabase!.from('leave_types').select('*').eq('active',true).order('id');
@@ -87,7 +111,7 @@ export default function PeoplePerformance({scope,profile}:{scope:string;profile:
   if (error) throw databaseError(error); return (data ?? []) as Row[];
  }});
  const balances = useQuery({queryKey:[scope,'people','balances',year,balanceUser],queryFn:()=>rpc<Row[]>('leave_balances',admin && balanceUser ? {p_year:year,p_user:Number(balanceUser)} : {p_year:year})});
- const commission = useQuery({queryKey:[scope,'people','commission',month],queryFn:()=>rpc<Row>('commission_summary',{p_from:`${month}-01`,p_to:endOfMonth(month)})});
+ const commission = useQuery({queryKey:[scope,'people','commission',performanceRange.from,performanceRange.to],queryFn:()=>rpc<Row>('commission_summary',{p_from:performanceRange.from,p_to:performanceRange.to})});
  const rules = useQuery({queryKey:[scope,'people','rules'],enabled:admin,queryFn:async()=>{
   const {data,error} = await supabase!.from('commission_rules').select('*').order('id',{ascending:false}).limit(300);
   if (error) throw databaseError(error); return (data ?? []) as Row[];
@@ -107,7 +131,7 @@ export default function PeoplePerformance({scope,profile}:{scope:string;profile:
  const policy: Row|null = attendance.data?.policy ?? null;
  const pendingLeave = (leaveRequests.data ?? []).filter(row => row.status === 'pending');
  const balanceRows: Row[] = Array.isArray(balances.data) ? balances.data : [];
- const staffRows = (users.data ?? []).filter(row => row.role === 'salesperson' || row.role === 'admin');
+ const staffRows = admin ? (directory.data ?? []) : (users.data ?? []).filter(row => row.role === 'salesperson' || row.role === 'admin');
  const filteredStaff = staffRows.filter(row => {
   const needle = search.trim().toLowerCase(); if (!needle) return true;
   return [row.name,row.staff_code,row.phone,row.territory].some(value => String(value ?? '').toLowerCase().includes(needle));
@@ -127,19 +151,20 @@ export default function PeoplePerformance({scope,profile}:{scope:string;profile:
  const intro: Record<Tab,string> = {team:'teamIntroPp',attendance:'attendanceIntro',leave:'leaveIntro',commissions:'commissionsIntro'};
 
  return <main className="content people-page">
-  <div className="page-heading"><div><span className="eyebrow">CHARM KENYA · {t('businessTimeZone')}</span><h1>{t('peopleTitle')}</h1><p>{t(intro[tab])}</p></div>
+  <div className="page-heading staffs-page-heading"><div><span className="eyebrow">CHARM KENYA · {t('businessTimeZone')}</span><h1>{t(admin?'staffsTitle':'peopleTitle')}</h1><p>{t(admin&&tab==='team'?'staffsIntro':intro[tab])}</p></div>
+   {admin&&tab==='team'&&<button className="primary" onClick={()=>setAddStaff(true)}><UserPlus size={17}/>{t('addStaff')}</button>}
    {tab==='leave'&&<button className="primary" onClick={()=>setLeaveEditor('new')}><Plus size={18}/>{t('requestLeave')}</button>}
    {tab==='commissions'&&admin&&<button className="primary" onClick={()=>setRuleEditor('new')}><Plus size={18}/>{t('newCommissionRule')}</button>}
   </div>
   <nav className="field-tabs" role="tablist" aria-label={t('peopleTitle')}>
    {available.map(value=><button type="button" role="tab" aria-selected={tab===value} key={value} className={tab===value?'active':''} onClick={()=>setTab(value)}>
     {value==='team'?<Users size={16}/>:value==='attendance'?<CalendarCheck size={16}/>:value==='leave'?<CalendarDays size={16}/>:<Coins size={16}/>}
-    <span>{t(value==='team'?'teamPerformance':value==='attendance'?'attendanceTab':value==='leave'?'leaveTab':'commissionsTab')}</span>
+    <span>{t(value==='team'?(admin?'staffsNav':'teamPerformance'):value==='attendance'?'attendanceTab':value==='leave'?'leaveTab':'commissionsTab')}</span>
     {value==='leave'&&pendingLeave.length>0&&<em>{pendingLeave.length}</em>}
    </button>)}
   </nav>
   <div className="field-cards people-kpis">
-   {admin&&<button type="button" className="card field-card" onClick={()=>setTab('team')}><span className="eyebrow">{t('teamDirectory')}</span><strong>{staffRows.filter(row=>row.active).length}</strong><small>{staffRows.length} {t('staff').toLowerCase()}</small><Users size={19}/></button>}
+   {admin&&<button type="button" className="card field-card" onClick={()=>setTab('team')}><span className="eyebrow">{t('staffsNav')}</span><strong>{staffRows.filter(row=>row.active).length}</strong><small>{staffRows.length} {t('staff').toLowerCase()}</small><Users size={19}/></button>}
    <button type="button" className="card field-card" onClick={()=>setTab('attendance')}><span className="eyebrow">{t('presentDays')}</span><strong>{presentTotal}/{dayTotal}</strong><small>{t('hoursPp')}: {hoursTotal.toFixed(1)}</small><CalendarCheck size={19}/></button>
    <button type="button" className="card field-card" onClick={()=>setTab('leave')}><span className="eyebrow">{t('pendingLeave')}</span><strong>{pendingLeave.length}</strong><small>{t('leaveBalance')}</small><CalendarDays size={19}/></button>
    <button type="button" className="card field-card" onClick={()=>setTab('commissions')}><span className="eyebrow">{t('commissionEarned')}</span><strong>{formatMoney(commissionTotals.earned ?? 0,language)}</strong><small>{t('commissionPending')}: {formatMoney(commissionTotals.pending ?? 0,language)}</small><Coins size={19}/></button>
@@ -148,30 +173,31 @@ export default function PeoplePerformance({scope,profile}:{scope:string;profile:
   {!!error&&<ErrorNotice error={error} retry={()=>setError(undefined)}/>}
 
   {tab==='team'&&admin&&<section className="people-team">
+   <div className="card people-toolbar"><PerformancePeriodFilter t={t} language={language} period={performancePeriod} onPeriod={setPerformancePeriod} from={performanceFrom} to={performanceTo} onFrom={setPerformanceFrom} onTo={setPerformanceTo}/></div>
+   {salesSummary.isError&&<ErrorNotice error={salesSummary.error} retry={()=>salesSummary.refetch()}/>}
    <div className="people-search"><Search size={18}/><input aria-label={t('searchStaff')} placeholder={t('searchStaff')} value={search} onChange={event=>setSearch(event.target.value)}/><span>{filteredStaff.length}</span></div>
    <p className="field-note">{t('staffSearchHint')}</p>
-   {users.isPending?<Loading/>:users.isError?<ErrorNotice error={users.error} retry={()=>users.refetch()}/>:filteredStaff.length===0?<p className="field-empty">{t('noStaffMatch')}</p>:<div className="people-grid">{filteredStaff.map(person=>{
-    const sales = (monthly.data?.team ?? []).find((row:Row)=>row.id===person.id)?.sales ?? 0;
+   {directory.isPending?<Loading/>:directory.isError?<ErrorNotice error={directory.error} retry={()=>directory.refetch()}/>:filteredStaff.length===0?<p className="field-empty">{t('noStaffMatch')}</p>:<div className="people-grid">{filteredStaff.map(person=>{
+    const sales = (salesSummary.data?.team ?? []).find((row:Row)=>row.id===person.id)?.sales ?? 0;
     const commissionRow = (commission.data?.staff ?? []).find((row:Row)=>row.salesperson_id===person.id);
     const assigned = clientsByOwner.get(String(person.id)) ?? [];
     const lifecycle = (status: string) => assigned.filter(row => (row.lifecycle_status ?? 'active') === status).length;
-    return <article className="card people-card" key={person.id}>
-     <header><div className="person-avatar">{String(person.name).split(' ').slice(0,2).map((part:string)=>part[0]).join('')}</div><div><h2>{person.name}</h2><span className="people-code">{person.staff_code ?? `#${person.id}`}</span></div><Status value={person.role}/></header>
-     <div className="people-badges"><span className={`badge ${person.active?'active':'declined'}`}>{t(person.active?'active':'inactive')}</span>{!person.active&&<span className="badge declined">{t('inactive')}</span>}</div>
-     <dl className="people-facts"><div><dt>{t('phone')}</dt><dd>{person.phone??t('notProvided')}</dd></div><div><dt>{t('territory')}</dt><dd>{person.territory??t('notProvided')}</dd></div></dl>
-     <div className="people-metrics"><div><span>{t('monthlySales')}</span><strong>{formatMoney(sales,language)}</strong></div><div><span>{t('clientsAssigned')}</span><strong>{assigned.length}</strong></div><div><span>{t('commissionEarned')}</span><strong>{formatMoney(commissionRow?.earned ?? 0,language)}</strong></div></div>
+    return <article className="card people-card staffs-profile-card" key={person.id}>
+     <header><StaffAvatar name={person.name} path={person.photo_path} className="person-avatar"/><div><h2>{person.name}</h2><span className="people-code"><b>{t('staffCode')}</b>{person.staff_code ?? `#${person.id}`}</span></div><Status value={person.role}/></header>
+     <div className="people-badges"><span className={`badge ${person.active?'active':'declined'}`}>{t(person.active?'active':'inactive')}</span></div>
+     <p className="staffs-profile-email">{person.email}</p><dl className="people-facts"><div><dt>{t('phone')}</dt><dd>{person.phone??t('notProvided')}</dd></div><div><dt>{t('territory')}</dt><dd>{person.territory??t('notProvided')}</dd></div></dl>
+     <div className="people-metrics"><div><span>{t('periodSales')}</span><strong>{formatMoney(sales,language)}</strong></div><div><span>{t('clientsAssigned')}</span><strong>{assigned.length}</strong></div><div><span>{t('commissionEarned')}</span><strong>{formatMoney(commissionRow?.earned ?? 0,language)}</strong></div></div>
      <div className="people-lifecycle"><span>{t('clientLifecycle')}</span><div><span className="badge active">{t('active')} {lifecycle('active')}</span><span className="badge prospective">{t('prospective')} {lifecycle('prospective')}</span><span className="badge declined">{t('declined')} {lifecycle('declined')}</span></div></div>
-     <button type="button" className="primary" onClick={()=>setStaffProfile(person)}>{t('viewPerformance')}<UserRound size={16}/></button>
+     <button type="button" className="primary" onClick={()=>setStaffProfile(person)}>{t('viewPerformance')}<ArrowUpRight size={16}/></button>
     </article>;
    })}</div>}
   </section>}
 
   {tab==='attendance'&&<section className="people-section">
    <div className="card people-toolbar">
-    <Field label="dateFrom"><input type="date" value={from} max={to} onChange={event=>setFrom(event.target.value)}/></Field>
-    <Field label="dateTo"><input type="date" value={to} min={from} onChange={event=>setTo(event.target.value)}/></Field>
+    <PerformancePeriodFilter t={t} language={language} period={performancePeriod} onPeriod={setPerformancePeriod} from={performanceFrom} to={performanceTo} onFrom={setPerformanceFrom} onTo={setPerformanceTo}/>
     {admin&&<Field label="staffFilter"><select value={attendanceFilter} onChange={event=>setAttendanceFilter(event.target.value)}><option value="">{t('allStaff')}</option>{staffRows.map(person=><option key={person.id} value={person.id}>{person.name} · {person.staff_code}</option>)}</select></Field>}
-    <button type="button" className="primary" onClick={()=>setRange({from,to})}>{t('applyRange')}</button>
+    <button type="button" className="primary" onClick={()=>setRange(performanceRange)}>{t('applyRange')}</button>
     <button type="button" disabled={!attendanceRows.length} onClick={()=>downloadCsv(`attendance-${range.from}-${range.to}.csv`,[t('staffCode'),t('name'),t('date'),t('attendanceStatus'),t('hoursPp'),t('visitCount')],(attendanceFilter?attendanceRows.filter(row=>String(row.salesperson_id)===attendanceFilter):attendanceRows).map(row=>[row.staff_code,row.name,row.day,row.status,row.hours,row.visit_count]))}><Download size={16}/>{t('exportAttendance')}</button>
    </div>
    <p className="field-note">{t('attendanceScopeNote')}</p>
@@ -216,9 +242,8 @@ export default function PeoplePerformance({scope,profile}:{scope:string;profile:
 
   {tab==='commissions'&&<section className="people-section">
    <div className="card people-toolbar">
-    <Field label="monthRange"><input type="month" value={month} onChange={event=>setMonth(event.target.value || LEAVE_MONTH())}/></Field>
-    <span className="people-period">{formatBusinessDate(`${month}-01`,language)} → {formatBusinessDate(endOfMonth(month),language)}</span>
-    <button type="button" disabled={!commissionRows.length} onClick={()=>downloadCsv(`commissions-${month}.csv`,[t('staffCode'),t('name'),t('order_id'),t('basisLabel'),t('commissionAmount'),t('status')],commissionRows.map(row=>[row.staff_code,row.name,row.order_id,row.basis,row.commission,row.status]))}><Download size={16}/>{t('exportCommission')}</button>
+    <PerformancePeriodFilter t={t} language={language} period={performancePeriod} onPeriod={setPerformancePeriod} from={performanceFrom} to={performanceTo} onFrom={setPerformanceFrom} onTo={setPerformanceTo}/>
+    <button type="button" disabled={!commissionRows.length} onClick={()=>downloadCsv(`commissions-${performanceRange.from}-${performanceRange.to}.csv`,[t('staffCode'),t('name'),t('order_id'),t('basisLabel'),t('commissionAmount'),t('status')],commissionRows.map(row=>[row.staff_code,row.name,row.order_id,row.basis,row.commission,row.status]))}><Download size={16}/>{t('exportCommission')}</button>
    </div>
    {commission.isPending?<Loading/>:commission.isError?<ErrorNotice error={commission.error} retry={()=>commission.refetch()}/>:<>
     <div className="people-money">{['earned','pending','approved','paid','reversed'].map(key=><div key={key} className={`card people-money-card ${key}`}><span>{t(key==='pending'?'commissionPending':key==='earned'?'commissionEarned':key==='approved'?'commissionApproved':key==='paid'?'commissionPaid':'commissionReversed')}</span><strong>{formatMoney(commissionTotals[key] ?? 0,language)}</strong><small>{key==='earned'?`${commissionTotals.entries ?? 0} ${t('commissionEntries').toLowerCase()}`:''}</small></div>)}</div>
@@ -231,7 +256,7 @@ export default function PeoplePerformance({scope,profile}:{scope:string;profile:
      </article>;})}</div>}
      <p className="field-note">{t('commissionRuleHint')} {t('commissionRulesHint')}</p>
     </section>}
-    <section className="card people-commission-list"><header><h2>{t('commissionBreakdown')}</h2><span className="small-label">{t('monthRange')} {month}</span></header>
+    <section className="card people-commission-list"><header><h2>{t('commissionBreakdown')}</h2><span className="small-label">{formatBusinessDate(performanceRange.from,language)} → {formatBusinessDate(performanceRange.to,language)}</span></header>
      {commissionRows.length===0?<p className="field-empty">{t('noCommission')}</p>:<div className="people-entries">{commissionRows.map(entry=><article className="people-entry" key={entry.id}>
       <header><div><strong>#{entry.order_id} · {entry.client ?? '—'}</strong><span>{entry.staff_code} · {entry.name}</span></div><CommissionBadge value={entry.status}/></header>
       <div className="people-entry-meta"><span>{t('orderTotal')}: {formatMoney(entry.order_total,language)}</span><span>{t('basisLabel')}: {t(basisWord[entry.basis] ?? entry.basis)}</span><span>{t('commissionRate')}: {entry.rate==null?'—':`${Number(entry.rate)}%`}</span></div>
@@ -249,6 +274,7 @@ export default function PeoplePerformance({scope,profile}:{scope:string;profile:
   </section>}
 
   {staffProfile&&<StaffDetail row={staffProfile} scope={scope} currentUserId={profile.id} canEditPhoto={profile.role==='admin'||Number(staffProfile.id)===profile.id} onClose={()=>setStaffProfile(null)} onSaved={()=>{void refresh('');}}/>}
+  {addStaff&&<RecordForm kind="staff" scope={scope} profile={profile} row={null} onClose={()=>setAddStaff(false)} onSaved={()=>{setAddStaff(false);void qc.invalidateQueries({queryKey:[scope,'people']});void qc.invalidateQueries({queryKey:[scope,'staff']});}}/>}
   {attendanceStaff&&<AttendanceDetail staff={attendanceStaff} rows={attendanceRows.filter(row=>String(row.salesperson_id)===String(attendanceStaff.salesperson_id))} admin={admin} language={language} t={t} busy={busy} onClose={()=>setAttendanceStaff(null)} onCorrect={row=>{setAttendanceStaff(null);setCorrection(row);}}/>}
   {correction&&<AttendanceCorrection row={correction} onClose={()=>setCorrection(null)} onSaved={async message=>{setCorrection(null);await run(async()=>undefined,message);}}/>}
   {leaveEditor&&<LeaveEditor profile={profile} admin={admin} users={staffRows} types={leaveTypes.data ?? []} request={leaveEditor==='new'?null:leaveEditor} busy={busy} setBusy={setBusy} error={error} setError={setError} onClose={()=>setLeaveEditor(null)} onSaved={async message=>{setLeaveEditor(null);await refresh(message);}}/>}

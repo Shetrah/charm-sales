@@ -1,4 +1,5 @@
 export const reportWords = {
+ aiDailyReport:['AI daily field report','AI每日外勤报告'],autoPreparedFromVisits:['Automatically prepared from submitted client visit reports','根据已提交的客户拜访报告自动生成'],regenerate:['Refresh summary','刷新摘要'],
  reporting:['Reports','报告'],
  reportingTitle:['Management reports','管理报告'],
  reportingIntro:['Daily, weekly and monthly reports built from recorded visits and orders. Facts are snapshotted; AI interpretation is labelled separately.','基于已记录拜访和订单生成的日、周、月报告。事实会被快照保存，AI 解读单独标注。'],

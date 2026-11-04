@@ -7,6 +7,20 @@
 .people-search input{flex:1;min-width:0;border:0;background:transparent;padding:12px 0;font-size:13px;color:var(--text);outline:none}
 .people-search>span{flex:0 0 auto;font-size:11px;font-variant-numeric:tabular-nums;color:var(--muted)}
 .people-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.staffs-page-heading{align-items:center}
+.staffs-page-heading>.primary{display:inline-flex;align-items:center;gap:8px}
+.staffs-profile-card{position:relative;gap:13px;padding:18px;border:1px solid color-mix(in srgb,var(--purple) 10%,var(--border));box-shadow:0 8px 25px color-mix(in srgb,var(--text) 5%,transparent);transition:transform .18s,box-shadow .18s}
+.staffs-profile-card:hover{transform:translateY(-2px);box-shadow:0 14px 32px color-mix(in srgb,var(--purple) 10%,transparent)}
+.staffs-profile-card>header{align-items:center}
+.staffs-profile-card .person-avatar{overflow:hidden;border:1px solid color-mix(in srgb,var(--purple) 12%,var(--border));background:linear-gradient(145deg,var(--soft),color-mix(in srgb,var(--teal) 10%,var(--surface)));}
+.staffs-profile-card .person-avatar.photographed{padding:0}
+.staffs-profile-card .staff-photo{width:100%;height:100%;object-fit:cover;border-radius:inherit}
+.staffs-profile-card>header>div:nth-child(2){align-self:center}
+.staffs-profile-card .people-code{display:flex;align-items:center;gap:6px;margin-top:5px;padding:4px 7px;border:1px solid var(--border);border-radius:7px;background:var(--bg);font-weight:750;letter-spacing:.35px}
+.staffs-profile-card .people-code b{color:var(--muted);font-size:8px;text-transform:uppercase;letter-spacing:.6px}
+.staffs-profile-email{margin:-5px 0 0;padding:8px 10px;border-radius:9px;background:var(--bg);color:var(--muted);font-size:10px;overflow-wrap:anywhere}
+.staffs-profile-card .people-facts{padding-top:1px}
+.staffs-profile-card>.primary{min-height:40px}
 .people-card{display:flex;flex-direction:column;gap:12px;padding:17px;border-radius:15px;min-width:0}
 .people-card>header{display:flex;align-items:flex-start;gap:11px;min-width:0}
 .people-card>header>div:nth-child(2){flex:1;min-width:0}
@@ -28,6 +42,11 @@
 .people-card>.primary{margin-top:auto;display:inline-flex;align-items:center;justify-content:center;gap:7px}
 .people-section{display:flex;flex-direction:column;gap:14px}
 .people-toolbar{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;padding:15px;border-radius:14px}
+.performance-period-filter{display:flex;flex:1 1 100%;flex-wrap:wrap;align-items:flex-end;gap:10px;min-width:0}
+.performance-period-filter .field{flex:1 1 135px;min-width:120px;margin:0}
+.performance-period-filter .people-period{flex:1 1 100%;padding:1px 2px;color:var(--muted);font-size:11px}
+.people-toolbar>.performance-period-filter{flex:1 1 520px}
+.people-toolbar>.performance-period-filter .people-period{flex:1 1 160px;padding-bottom:10px}
 .people-toolbar .field{margin:0;flex:1 1 150px;min-width:130px}
 .people-toolbar>button{flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;min-height:40px}
 .people-period{flex:1 1 100%;font-size:11px;line-height:1.5;color:var(--muted)}

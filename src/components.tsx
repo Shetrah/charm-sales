@@ -1,6 +1,7 @@
 import { useEffect, useState, useId, useRef, Children, cloneElement, isValidElement, type ReactElement, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Moon, Sun, Languages, X, LoaderCircle } from 'lucide-react';
+import { Moon, Sun, Languages, X, LoaderCircle, Eye, EyeOff } from 'lucide-react';
+import type { InputHTMLAttributes } from 'react';
 import { usePreferences, translatedError } from './i18n';
 import { lookup, type Row } from './lib/data';
 export function useDebounce(value:string){const [debounced,set]=useState(value);useEffect(()=>{const timer=setTimeout(()=>set(value),300);return ()=>clearTimeout(timer);},[value]);return debounced;}
@@ -15,6 +16,10 @@ export function Field({label,children}:{label:string;children:ReactNode}){
  const {t}=usePreferences();const id=useId();
  const controls=Children.toArray(children);const direct=controls.some(child=>isValidElement(child)&&typeof child.type==='string'&&['input','select','textarea'].includes(child.type));
  return <div className="field">{direct?<label htmlFor={id}>{t(label)}</label>:<span>{t(label)}</span>}{controls.map(child=>isValidElement(child)&&typeof child.type==='string'&&['input','select','textarea'].includes(child.type)?cloneElement(child as ReactElement<any>,{id}):child)}</div>;
+}
+export function PasswordField({label,...props}:{label:string}&Omit<InputHTMLAttributes<HTMLInputElement>,'type'>){
+ const {t}=usePreferences();const id=useId();const [visible,setVisible]=useState(false);
+ return <div className="field"><label htmlFor={id}>{t(label)}</label><div className="password-entry"><input {...props} id={id} type={visible?'text':'password'}/><button type="button" className="password-visibility" aria-label={t(visible?'hidePassword':'showPassword')} aria-pressed={visible} onClick={()=>setVisible(value=>!value)}>{visible?<EyeOff size={17}/>:<Eye size={17}/>}</button></div></div>;
 }
 export function Lookup({kind,value,onChange,scope,label,required=true}:{kind:string;value:string;onChange:(value:string)=>void;scope:string;label:string;required?:boolean}){
  const {t}=usePreferences();const inputId=useId();const [search,setSearch]=useState('');const debounced=useDebounce(search);

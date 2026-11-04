@@ -1,0 +1,123 @@
+/* Charm Company Hub 2.1 premium UI layer. Presentation only: no data or workflow rules. */
+:root {
+  --premium-radius: 18px;
+  --premium-radius-small: 12px;
+  --premium-elevated: 0 14px 42px color-mix(in srgb, var(--text) 7%, transparent);
+  --premium-focus: 0 0 0 3px color-mix(in srgb, var(--purple) 20%, transparent);
+}
+html { scroll-behavior: smooth; }
+body { min-width: 320px; overflow-x: hidden; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; box-shadow: var(--premium-focus); }
+button, .primary, .phone-tabs a, .phone-tabs button { touch-action: manipulation; }
+.card, .stat, .records, .record-card, .person-card { border-radius: var(--premium-radius); }
+.card { box-shadow: var(--premium-elevated); }
+.page-heading { align-items: flex-end; gap: 20px; }
+.page-heading h1 { letter-spacing: -.045em; line-height: 1.12; }
+.page-heading p { max-width: 760px; line-height: 1.65; }
+.eyebrow { letter-spacing: .14em; }
+.main > header { position: sticky; top: 0; z-index: 18; backdrop-filter: blur(18px); background: color-mix(in srgb, var(--surface) 92%, transparent); }
+.sidebar { box-shadow: 12px 0 38px #10182808; }
+.sidebar nav a { min-height: 42px; border-radius: 11px; }
+.sidebar nav a.active { font-weight: 700; box-shadow: inset 3px 0 0 var(--purple); }
+.brand { min-height: 84px; }
+.primary { background: var(--purple); border-color: var(--purple); border-radius: 12px; min-height: 42px; box-shadow: 0 5px 16px color-mix(in srgb, var(--purple) 18%, transparent); }
+.primary:hover:not(:disabled) { background: color-mix(in srgb, var(--purple) 88%, #111); transform: translateY(-1px); }
+button:not(.icon-button):not(.text-button), .button-link { border-radius: 11px; }
+.field { min-width: 0; }
+.field input, .field select, .field textarea, input, select, textarea { border-radius: 11px; min-height: 42px; }
+.field textarea, textarea { min-height: 94px; }
+.notice { border-radius: 13px; }
+.badge { border-radius: 999px; padding: 5px 10px; font-weight: 650; }
+.records { box-shadow: var(--premium-elevated); }
+.records .toolbar { border-radius: var(--premium-radius) var(--premium-radius) 0 0; }
+.record-card { padding: 18px; }
+.record-card:hover { transform: translateY(-2px); }
+.stat { padding: 22px; }
+.stat strong, .finance-kpis strong, .profile-stats strong { font-variant-numeric: tabular-nums; }
+.dialog-head { padding-top: max(20px, env(safe-area-inset-top)); }
+.dialog-actions { padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+/* Expense / contra clarity */
+.expense-actions-premium { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; }
+.button-link { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 9px 13px; color: var(--purple); border: 1px solid var(--border); background: var(--surface); font-size: 12px; font-weight: 650; }
+.expense-classification-hint { margin-top: 12px; }
+.contra-workspace { display: grid; gap: 18px; }
+.contra-hero { display: flex; align-items: center; gap: 16px; padding: 22px; }
+.contra-hero-icon { display: grid; place-items: center; flex: 0 0 52px; height: 52px; border-radius: 15px; background: var(--soft); color: var(--purple); }
+.contra-hero-copy { flex: 1; min-width: 0; }
+.contra-hero-copy h2 { margin: 6px 0; }
+.contra-hero-copy p { max-width: 700px; }
+.contra-transfer-preview { display: grid; grid-template-columns: minmax(0,1fr) 48px minmax(0,1fr); align-items: center; gap: 12px; }
+.contra-transfer-preview article { display: grid; gap: 9px; min-width: 0; }
+.contra-transfer-preview article > span, .contra-transfer-preview small { color: var(--muted); font-size: 12px; }
+.contra-transfer-preview article > strong { font-size: 19px; overflow-wrap: anywhere; }
+.contra-arrow { display: grid; place-items: center; color: var(--teal); }
+.contra-explanation h3 { margin-top: 0; }
+.contra-explanation p { max-width: 900px; margin-bottom: 12px; }
+.contra-explanation .row-actions { margin-top: 16px; }
+/* PWA bottom navigation: 4 high-frequency destinations + More. */
+@media (max-width: 760px) {
+  html { scroll-behavior: auto; }
+  .content { padding: 20px 14px calc(104px + env(safe-area-inset-bottom)); }
+  .main > header { height: 60px; padding-inline: 10px; }
+  .header-caption { font-size: 9px; letter-spacing: .25px; }
+  .header-tools { gap: 2px; }
+  .page-heading { align-items: flex-start; flex-direction: column; margin-bottom: 18px; }
+  .page-heading h1 { font-size: clamp(24px, 7vw, 31px); }
+  .page-heading .primary { align-self: stretch; width: 100%; }
+  .card { padding: 17px; }
+  .toolbar { flex-wrap: wrap; padding: 14px; }
+  .toolbar .search { flex: 1 1 100%; max-width: none; }
+  .toolbar select, .toolbar > input { min-width: 0; flex: 1 1 42%; }
+  .form-grid { grid-template-columns: minmax(0,1fr); }
+  .row-actions { gap: 8px; }
+  .row-actions > button, .row-actions > a { min-height: 42px; }
+  .phone-tabs {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 3px;
+    min-height: calc(66px + env(safe-area-inset-bottom));
+    padding: 7px 7px calc(7px + env(safe-area-inset-bottom));
+    overflow: hidden;
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -8px 28px #1018280d;
+  }
+  .phone-tabs a, .phone-tabs button {
+    display: flex; flex: initial; min-width: 0; max-width: none; width: 100%;
+    flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+    padding: 5px 2px; border: 0; border-radius: 12px; background: transparent;
+    color: var(--muted); font-size: 9px; line-height: 1.1; font-weight: 600;
+    white-space: nowrap; overflow: hidden;
+  }
+  .phone-tabs a.active { background: var(--soft); color: var(--purple); }
+  .phone-tabs .phone-more { border: 0; background: transparent; color: var(--muted); }
+  .phone-tabs .phone-more:active { background: var(--soft); }
+  /* The complete Finance page list stays in the existing More drawer on phones. */
+  .finance-page-switcher { display: none !important; }
+  .finance-kpis { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 9px; }
+  .finance-kpis > * { min-width: 0; }
+  .finance-kpis .card { padding: 14px; }
+  .finance-kpis strong { font-size: 20px; overflow-wrap: anywhere; }
+  .finance-charts { grid-template-columns: minmax(0,1fr); }
+  .expense-actions-premium { display: grid; grid-template-columns: minmax(0,1fr); }
+  .expense-actions-premium > * { width: 100%; min-height: 44px; }
+  .contra-hero { align-items: flex-start; flex-wrap: wrap; padding: 17px; }
+  .contra-hero-copy { flex-basis: calc(100% - 70px); }
+  .contra-hero > .badge { margin-left: 68px; }
+  .contra-transfer-preview { grid-template-columns: minmax(0,1fr); }
+  .contra-arrow { transform: rotate(90deg); }
+  .contra-explanation .row-actions { display: grid; grid-template-columns: minmax(0,1fr); }
+  .contra-explanation .row-actions > a { min-height: 42px; }
+  .dialog-actions { gap: 8px; }
+  .dialog-actions > button { flex: 1 1 auto; min-height: 46px; }
+}
+@media (max-width: 360px) {
+  .phone-tabs a, .phone-tabs button { font-size: 8px; }
+  .header-caption { display: none; }
+  .finance-kpis { grid-template-columns: minmax(0,1fr); }
+  .content { padding-inline: 11px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}

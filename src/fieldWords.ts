@@ -1,4 +1,5 @@
 export const fieldWords = {
+ startWorkday:['Start workday','开始工作日'],endWorkday:['End workday','结束工作日'],workdayComplete:['Workday complete','工作日已完成'],workdayProgress:['Workday in progress','工作日进行中'],locationsCount:['locations','个位置'],routeTrackingActive:['Workday tracking is active','工作日定位追踪已开启'],routeTrackingPaused:['Location tracking stops when the workday ends','工作日结束后停止定位追踪'],routeStart:['Start','起点'],routeLatest:['Latest location','最新位置'],routeEnd:['End workday','工作日终点'],routeInProgress:['In progress','进行中'],updateLocation:['Update location','更新位置'],routeDirections:['Directions','路线导航'],viewLocationTrail:['View location trail','查看定位轨迹'],locationTrail:['Location','位置'],noRouteRange:['No workdays in this range','此日期范围内没有工作日'],startRoutePrompt:['Start the workday to record your first location and show today’s route here.','开始工作日以记录首个位置并在此查看今日路线。'],locationWillShow:['Route location will appear here','路线位置将在此显示'],
  workspaceNav:['WORKSPACE','工作区'],
  reportsNav:['Reports','报告'],
  field:['Field Travel & Planning','差旅与计划'],

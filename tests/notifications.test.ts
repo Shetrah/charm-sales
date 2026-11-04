@@ -68,10 +68,10 @@ describe.sequential('Notification routing', () => {
   expect(await recipients('orders', 'orders_submitted')).toEqual([1]);
  });
 
- it('informs the owner and finance when an order is confirmed, without copying other salespeople', async () => {
+ it('informs the owner and fulfilment desk when an order is confirmed, without copying unrelated staff', async () => {
   await asSystem(admin);
   await db.exec("update charm.orders set status='confirmed',confirmed_at=now(),confirmed_by=1 where id=1");
-  expect(await recipients('orders', 'confirmed')).toEqual([2, 4]);
+  expect(await recipients('orders', 'confirmed')).toEqual([2]);
   await db.exec("update charm.finance_sales_invoices set batch_lot='LOT-READY' where order_id=1");
  });
 

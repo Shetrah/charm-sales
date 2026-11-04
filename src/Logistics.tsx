@@ -60,7 +60,7 @@ export default function Logistics({scope,desk=false}:{scope:string;desk?:boolean
    setProduction(null);await refresh('productionArranged');
   }catch(e){setDialogError(e);}finally{setBusy(false);}
  }
- return <main className="content logistics-page">
+ return <main className={`content logistics-page ${desk?'logistics-executive':''}`}>
   <div className="page-heading"><div><span className="eyebrow">CHARM · FULFILLMENT</span><h1>{t('logisticsTitle')}</h1><p>{t('logisticsIntro')}</p></div>{tab==='deliveries'&&<button className="primary" onClick={()=>setPlan({id:'',_client:''})} disabled={ready.length===0}><Truck size={18}/>{t('planDelivery')}</button>}</div>
   <div className="field-tabs" role="tablist">{tabs.map(([key,Icon])=><button key={key} role="tab" aria-selected={tab===key} className={tab===key?'active':''} onClick={()=>setTab(key)}><Icon size={17}/>{t(`logisticsTab_${key}`)}{key==='deliveries'&&!!(summary.planned+summary.dispatched)&&<em>{summary.planned+summary.dispatched}</em>}{key==='intake'&&!!intakeStats.waiting&&<em>{intakeStats.waiting}</em>}</button>)}</div>
   {!!notice&&<div role="status" className="notice">{notice}</div>}

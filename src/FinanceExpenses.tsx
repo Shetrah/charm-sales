@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Download, ListTree, Plus, Search, Wallet } from 'lucide-react';
 import { Dialog, ErrorNotice, Field, Loading, Lookup, useDebounce } from './components';
@@ -18,7 +19,7 @@ const methods=['Cash','Bank','M-Pesa','Cheque','Other'];
 const moneyPattern='[0-9]{1,11}(\\.[0-9]{1,2})?';
 const quantityPattern='[0-9]{1,9}(\\.[0-9]{1,4})?';
 
-export default function FinanceExpenses({scope,profile,meta,filters,onFilter,onOpen}:{scope:string;profile:Profile;meta:Row;filters:FinanceFilters;onFilter:(key:keyof FinanceFilters,value:string)=>void;onOpen:(id:number)=>void}){
+export default function FinanceExpenses({scope,profile,meta,filters,onFilter,onOpen,onRecordOperatingExpense}:{scope:string;profile:Profile;meta:Row;filters:FinanceFilters;onFilter:(key:keyof FinanceFilters,value:string)=>void;onOpen:(id:number)=>void;onRecordOperatingExpense:()=>void}){
  const {t,language}=usePreferences();const qc=useQueryClient();
  const [states,setStates]=useState<Record<string,string>>({classification:'',category:'',department:'',account:'',payment:''});
  const [search,setSearch]=useState('');const debounced=useDebounce(search);
@@ -55,10 +56,13 @@ export default function FinanceExpenses({scope,profile,meta,filters,onFilter,onO
  };
  const bars=(rows:Row[],label:(row:Row)=>string)=>rows.length===0?<p>{t('empty')}</p>:<div className="finance-category-bars">{rows.map(row=>{const max=Math.max(1,...rows.map(x=>Number(x.amount)));return <div key={label(row)}><span>{label(row)}</span><strong>{formatMoney(row.amount,language)}</strong><div className="bar-track"><div style={{width:`${Number(row.amount)/max*100}%`}}/></div></div>;})}</div>;
  return <section className="expense-workspace">
-  <div className="expense-actionbar"><div className="row-actions">
+  <div className="expense-actionbar"><div className="row-actions expense-actions-premium">
    <button className="primary" onClick={()=>setDialog({kind:'expense'})}><Plus size={18}/>{t('recordExpense')}</button>
+   <button onClick={onRecordOperatingExpense}><Wallet size={17}/>{t('recordOtherOperatingExpense')}</button>
+   <Link className="button-link" to="/finance/purchases"><span aria-hidden="true">↗</span>{t('openRawMaterialPurchases')}</Link>
    <button onClick={()=>setDialog({kind:'lists'})}><ListTree size={17}/>{t('manageExpenseLists')}</button>
   </div></div>
+  <div className="notice expense-classification-hint">{t('expenseRegisterScopeHint')}</div>
   {notice&&<div className="notice" role="status">{t(notice)}</div>}
   <section className="card finance-filters">
    <Field label="fromDate"><input type="date" value={filters.from} onChange={e=>onFilter('from',e.target.value)}/></Field>
@@ -110,12 +114,12 @@ export default function FinanceExpenses({scope,profile,meta,filters,onFilter,onO
    </div>
    {!!error&&<ErrorNotice error={error}/ >}
    {listed.isPending?<Loading/>:listed.isError?<ErrorNotice error={listed.error} retry={()=>listed.refetch()}/>:listed.data.rows.length===0?<div className="state"><Wallet size={32}/><h3>{t('empty')}</h3><p>{t('expenseRegisterEmpty')}</p></div>:<>
-    <div className="table-wrap desktop-records"><table><thead><tr>{registerColumns.map(key=><th key={key}>{t(headerLabels[key]??key)}</th>)}<th>{t('actions')}</th></tr></thead>
-     <tbody>{listed.data.rows.map(row=><tr key={String(row.line_id)}>{registerColumns.map(key=><td key={key}>{cell(key,row)}</td>)}<td><div className="row-actions"><button onClick={()=>onOpen(Number(row.request_id))}>{t('details')}</button></div></td></tr>)}</tbody></table></div>
-    <div className="finance-mobile-cards">{listed.data.rows.map(row=><article key={String(row.line_id)}><div><strong>{row.expense_number??`#${String(row.request_id)}`}</strong><span className={`badge ${row.payment_status}`}>{t(`paymentState_${row.payment_status}`)}</span></div>
-     <dl>{registerColumns.filter(key=>!['expense_number','payment_status','description'].includes(key)).map(key=><div key={key}><dt>{t(headerLabels[key]??key)}</dt><dd>{cell(key,row)}</dd></div>)}</dl>
-     <p className="expense-card-description">{row.description}</p>
-     <div className="row-actions"><button onClick={()=>onOpen(Number(row.request_id))}>{t('details')}</button></div></article>)}</div>
+    <div className="expense-register-cards">{listed.data.rows.map(row=><article className="expense-register-card" key={String(row.line_id)}>
+     <header className="expense-register-card-head"><div className="expense-register-title"><span>{row.expense_number??`#${String(row.request_id)}`}<i>·</i>{cell('expense_on',row)}</span><h3>{row.description||t('expenseDescription')}</h3>{row.reference&&<small>{t('reference')}: {row.reference}</small>}</div><div className="expense-register-badges">{cell('classification',row)}{cell('payment_status',row)}</div></header>
+     <div className="expense-register-amounts">{moneyFields.map(key=><div className={key==='outstanding'&&Number(row[key])>0?'is-outstanding':''} key={key}><span>{t(key)}</span><strong>{cell(key,row)}</strong></div>)}</div>
+     <dl className="expense-register-details">{['category_name','department_name','recipient','account_name','payment_method','owner_name','source_type','status'].map(key=><div key={key}><dt>{t(headerLabels[key]??key)}</dt><dd>{cell(key,row)}</dd></div>)}</dl>
+     <footer className="expense-register-card-foot"><span>{t('expenseRegister')} · #{String(row.line_id)}</span><button onClick={()=>onOpen(Number(row.request_id))}>{t('details')}<span aria-hidden="true">↗</span></button></footer>
+    </article>)}</div>
     <div className="pagination"><span>{listed.data.total} · {t('page')} {page}</span><button disabled={page===1} onClick={()=>setPage(page-1)}>{t('previous')}</button><button disabled={page*100>=listed.data.total} onClick={()=>setPage(page+1)}>{t('next')}</button></div>
    </>}
   </section>

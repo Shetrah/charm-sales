@@ -61,3 +61,6 @@ address is not.
    required.
 4. Camera capture, GPS and installability depend on browser permissions; geolocation is only captured on explicit
    user action while the tab is open. Background tracking is described separately in `docs/MOBILE_API.md`.
+5. Device notification tray delivery requires a Web Push sender, VAPID public/private keys and an authenticated
+   subscription endpoint. The worker can display push payloads, but the app cannot force OS notification permission
+   or sound. Browsers require a user gesture before audio can be enabled.

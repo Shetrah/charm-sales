@@ -2,6 +2,8 @@
 
 ## A. System overview
 
+**Premium Edition 2.2.0:** The refreshed interface uses Charm brand violet and teal, with role-aware mobile navigation, touch-friendly cards, compact forms and responsive layouts. The business workflows and Supabase data contracts remain the same except for the explicitly additive Contra Entry support described below.
+
 Charm Company Hub is a React and TypeScript web application backed by Supabase. It keeps sales records, customer collections, staff activity, finance requests, company expenses and cash movements in one authenticated workspace. The interface supports English and Simplified Chinese, light and dark themes, and responsive desktop and mobile layouts.
 
 **Sales Management** tracks customers, quotations and order documents, orders, payment submissions, verified collections, customer balances, field activity and performance. **Finance Tracking** records approved requests, confirmed disbursements, direct expenses, supplier payments, customer receipts, account balances, budgets, reconciliation and an audit history.
@@ -53,9 +55,13 @@ The current application does not define a separate Sales Manager role. Team-wide
 4. **Record a disbursement:** A Finance Officer (or Administrator acting in Finance) first completes the transfer outside the portal and confirms it with the payment provider. Open the approved request and choose **Record confirmed payment**. Enter the actual amount, account, reference, date and payment proof. The portal does not transfer money.
 5. **Direct company expense closeout:** A fully disbursed direct company expense closes automatically. A partial payment remains open for the remaining approved amount. No post-disbursement accountability form or extra approval is required for this direct expense workflow.
 6. **Staff advances:** Staff advances continue to use **Accountability**. The staff member records actual expenses with evidence or an actual refund with a reference. Finance reviews submissions. The outstanding advance is disbursed minus accepted expenses and refunds; an unsettled advance can prevent a further advance.
-7. **Registers and reports:** **Expenses** contains the consolidated expense register. **Disbursements** shows requests ready for payment, **Cashbook** shows recorded money movements, **Receipts** shows customer payment records, **Statements** supports bank/M-Pesa reconciliation, and **Audit** shows attributed finance events. Use date, staff and status filters, then export CSV or PDF where offered.
+7. **Registers and reports:** **Expenses** contains the consolidated expense register. Raw-material procurement is accessed separately from **Purchase** and follows Purchase Order → Goods Receipt / QC → Supplier Invoice. The Expenses screen is for general company expenditure and operating costs; use **Record other operational / financial expense** for operating costs such as utilities, rent, transport, bank charges and other non-material expenditure. **Disbursements** shows requests ready for payment, **Cashbook** shows recorded money movements, **Receipts** shows customer payment records, **Statements** supports bank/M-Pesa reconciliation, and **Audit** shows attributed finance events. Use date, staff and status filters, then export CSV or PDF where offered.
 
-Available account funds are calculated from recorded opening funds plus recorded receipts and refunds minus recorded payments. Amounts are calculated by the database; users should enter actual figures rather than calculate a balance manually. Dates use Nairobi time and finance amounts are in KES.
+**Contra entries:** To record cash banked or money moved between company accounts, open **Finance → Contra entry → Record account transfer**. Choose the source account (where the money leaves), destination account (where it arrives), amount, date, reference and description. The system checks that the source account has sufficient balance and posts both sides together. A contra transfer changes the two account balances but is not income or expenditure. Both legs appear in the Cashbook with one reference. A reference can only be used once for a contra transfer.
+
+Available account funds are calculated from recorded opening funds plus recorded receipts and refunds minus recorded payments, with contra transfers reducing the source and increasing the destination account. Amounts are calculated by the database; users should enter actual figures rather than calculate a balance manually. Dates use Nairobi time and finance amounts are in KES.
+
+**One-time setup:** Contra Entry requires the additive migration `supabase/sql-editor/20261104_finance_contra_transfers.sql`. A Finance administrator should run it once in the correct Supabase project's SQL Editor before using the new tab. The migration does not delete or rewrite historical records.
 
 ## E. Step-by-step common tasks
 
@@ -107,9 +113,15 @@ Available account funds are calculated from recorded opening funds plus recorded
 - Staff advances still require accountability; accepted expenses and refunds reduce the advance balance. This process remains in place to protect staff-advance controls.
 - Historical accountability entries and finance records are retained. The new closeout behavior applies when future direct company expense disbursements complete.
 - A manager or salesperson cannot change another salesperson’s original records. Administrators have designated management actions. Sensitive finance operations and sales reviews are enforced in database functions and row-level security.
-- The portal records transactions; it does not initiate bank or M-Pesa transfers.
+- The portal records transactions; it does not initiate bank or M-Pesa transfers. Contra Entry records a confirmed internal movement after the external cash deposit or transfer has happened.
 
-## G. Frequently asked questions
+## G. Mobile PWA and evidence
+
+The app is installable as a PWA and uses a mobile-specific bottom navigation plus a slide-out menu for the full set of authorized modules. Use the menu to reach pages that are not pinned in the bottom bar. The service worker caches the application shell, not private finance, sales or staff records; creating or submitting transactions still requires a network connection.
+
+Visit photos and general supporting documents are optional where the screen permits. Keep customer payment confirmation, payment attestations, contractual evidence, location permission for GPS check-in and production quality-control evidence where the workflow requires them.
+
+## H. Frequently asked questions
 
 **Why did my payment not change the customer balance?**  
 It may still be pending. Only a verified payment attached to a confirmed order reduces the balance.

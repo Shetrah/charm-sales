@@ -1,9 +1,9 @@
-import { LayoutDashboard, ClipboardList, CreditCard, Wallet, Receipt, ShoppingBag, CalendarDays, Users, SlidersHorizontal, Factory, Truck, FileCheck2, FileText } from 'lucide-react';
+import { LayoutDashboard, ClipboardList, CreditCard, Wallet, Receipt, ShoppingBag, CalendarDays, Users, SlidersHorizontal, Factory, Truck, FileCheck2, FileText, ArrowLeftRight } from 'lucide-react';
 export const financePages=[
  ['dashboard','financeDashboard',LayoutDashboard],['expenses','financeExpenses',Receipt],['requests','financerequests',ClipboardList],
  ['suppliers','financeSuppliers',Truck],
  ['disbursements','financePaymentsPage',CreditCard],
- ['cashbook','financecashbook',Wallet],['receipts','financereceipts',ShoppingBag],
+ ['cashbook','financecashbook',Wallet],['contra','financeContraEntry',ArrowLeftRight],['receipts','financereceipts',ShoppingBag],
  ['budgets','financebudgets',CalendarDays],
  ['batch_costs','financeBatchCosts',Factory],['purchases','financePurchases',Truck],['goods_receipts','financeGoodsReceipts',FileCheck2],['invoices','financeInvoices',FileText],['supplier_invoices','financeSupplierInvoices',FileText],
  ['statements','financestatements',Wallet],['accounts','financeAccounts',SlidersHorizontal],
