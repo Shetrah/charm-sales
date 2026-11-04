@@ -14,3 +14,7 @@ verify_jwt = false
 [functions.report-ai]
 # The function validates the caller JWT and admin role against the charm schema.
 verify_jwt = false
+
+[functions.daily-report-ai]
+# The function validates caller JWTs itself, then scopes visit access by role.
+verify_jwt = false

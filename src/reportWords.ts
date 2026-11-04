@@ -1,5 +1,8 @@
 export const reportWords = {
  aiDailyReport:['AI daily field report','AI每日外勤报告'],autoPreparedFromVisits:['Automatically prepared from submitted client visit reports','根据已提交的客户拜访报告自动生成'],regenerate:['Refresh summary','刷新摘要'],
+ dailyReportUnavailable:['The daily report service could not load visit data. Refresh the page or ask an administrator to check the deployed daily-report-ai function and database permissions.','每日报告服务无法读取拜访数据。请刷新页面，或请管理员检查已部署的 daily-report-ai 函数和数据库权限。'],
+ noDailyReports:['There are no submitted visit reports for this date.','此日期没有已提交的拜访报告。'],
+ originNotAllowed:['This portal address is not allowed to use the daily report service. Ask an administrator to add it to the function’s allowed origins.','此门户地址未获准使用每日报告服务。请管理员将其添加到函数允许的来源中。'],
  reporting:['Reports','报告'],
  reportingTitle:['Management reports','管理报告'],
  reportingIntro:['Daily, weekly and monthly reports built from recorded visits and orders. Facts are snapshotted; AI interpretation is labelled separately.','基于已记录拜访和订单生成的日、周、月报告。事实会被快照保存，AI 解读单独标注。'],
@@ -46,7 +49,7 @@ export const reportWords = {
  aiReady:['AI narrative','AI 摘要'],
  aiTemplate:['Automatic summary','自动摘要'],
  aiFailed:['Narrative failed','摘要失败'],
- aiUnavailable:['Narrative unavailable','摘要不可用'],
+ aiUnavailable:['Visit data loaded, but the AI provider could not prepare a summary. Check the AI provider key and availability.','拜访数据已加载，但 AI 服务无法生成摘要。请检查 AI 密钥和服务状态。'],
  regenerateNarrative:['Regenerate narrative','重新生成摘要'],
  narrativeRegenerated:['Narrative regenerated.','摘要已重新生成。'],
  executiveSummary:['Executive summary','执行摘要'],
