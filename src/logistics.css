@@ -4,17 +4,17 @@
 .badge.delivered{background:#099d9615;color:var(--teal)}
 .badge.failed{background:#d4526815;color:#d45268}
 .logistics-kpis{margin-bottom:18px}
-.logistics-dashboard-hero{display:flex;justify-content:space-between;align-items:center;gap:24px;padding:clamp(22px,3vw,34px);margin:4px 0 18px;border:1px solid color-mix(in srgb,#0a6745 25%,var(--border));border-radius:22px;background:radial-gradient(circle at 80% 0%,#45b48655,transparent 38%),linear-gradient(125deg,#0e5a3d,#147451 65%,#0d664d);color:#fff;overflow:hidden;box-shadow:0 14px 34px #0e5a3d22}
+.logistics-dashboard-hero{display:flex;justify-content:space-between;align-items:center;gap:24px;padding:clamp(22px,3vw,34px);margin:4px 0 18px;border:1px solid color-mix(in srgb,var(--brand-violet,var(--purple)) 28%,var(--border));border-radius:22px;background:radial-gradient(circle at 82% 0%,color-mix(in srgb,var(--teal) 40%,transparent),transparent 40%),linear-gradient(125deg,var(--cm-primary-a,var(--purple)),var(--cm-violet-2,var(--purple)) 62%,var(--cm-primary-b,var(--purple)));color:#fff;overflow:hidden;box-shadow:0 14px 34px color-mix(in srgb,var(--brand-violet,var(--purple)) 22%,transparent)}
 .logistics-dashboard-hero>div:first-child{max-width:720px;position:relative;z-index:1}
-.logistics-dashboard-hero .eyebrow{color:#a5e5c8}
+.logistics-dashboard-hero .eyebrow{color:#b9fff4}
 .logistics-dashboard-hero h2{margin:9px 0 8px;font-size:clamp(24px,3vw,36px);line-height:1.14;letter-spacing:-.04em}
-.logistics-dashboard-hero p{max-width:650px;color:#d6eee3;font-size:13px}
+.logistics-dashboard-hero p{max-width:650px;color:#f0edff;font-size:13px}
 .logistics-hero-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:19px}
 .logistics-hero-actions button{display:inline-flex;align-items:center;gap:8px;border:1px solid #ffffff55;border-radius:999px;padding:9px 15px;background:#ffffff16;color:#fff;font-size:12px;font-weight:700}
 .logistics-hero-actions button:hover{background:#ffffff28}
-.logistics-dashboard-hero .logistics-hero-mark{display:grid;place-items:center;width:120px;height:120px;flex:0 0 auto;border:1px solid #ffffff38;border-radius:36px;background:#ffffff18;color:#d7f7e6;transform:rotate(-9deg)}
-.logistics-kpi-primary{background:linear-gradient(145deg,#0b6645,#12835b)!important;color:#fff!important;border-color:#0b6645!important}
-.logistics-kpi-primary .eyebrow,.logistics-kpi-primary small{color:#cff3df!important}
+.logistics-dashboard-hero .logistics-hero-mark{display:grid;place-items:center;width:120px;height:120px;flex:0 0 auto;border:1px solid #ffffff48;border-radius:36px;background:#ffffff18;color:#b9fff4;transform:rotate(-9deg)}
+.logistics-kpi-primary{background:linear-gradient(145deg,var(--cm-primary-a,var(--purple)),var(--cm-primary-b,var(--purple)))!important;color:#fff!important;border-color:var(--brand-violet,var(--purple))!important}
+.logistics-kpi-primary .eyebrow,.logistics-kpi-primary small{color:#e5ddff!important}
 .logistics-kpi-primary strong{color:#fff!important}
 .logistics-overview-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;padding:0 18px 18px}
 .logistics-overview-facts>article{display:grid;gap:6px;min-width:0;padding:17px;border:1px solid var(--border);border-radius:15px;background:color-mix(in srgb,var(--surface) 78%,var(--bg))}
