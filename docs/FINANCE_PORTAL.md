@@ -27,13 +27,13 @@ Read-only inspection on 13 October 2026 found migrations 001–009 and an early 
 
 A staff request contains amount, purpose, category, required date, accountability due date and optional PDF/image support. The default accountability deadline is seven days after the default required date and can be edited before approval. Returned requests are corrected and resubmitted by their owner. Rejections/returns require a reason. Supporting documents are stored in private `charm-finance` Storage; allowed files are PDF/JPEG/PNG/WebP up to 10 MB.
 
-Approval reserves the approved amount against the category's required-month budget. Disbursement requires a verified recipient, an active account, sufficient confirmed account funds, a unique account/reference (case and surrounding whitespace normalized for duplicate checks), proof, a payment timestamp and an explicit confirmation. The recipient snapshot is retained with the transaction. Partial payments cannot exceed the approved amount. Another outstanding staff advance blocks a new advance to that person.
+Approval reserves the approved amount against the category's required-month budget. Disbursement requires an active account, sufficient confirmed account funds, a unique account/reference (case and surrounding whitespace normalized for duplicate checks), a payment timestamp and explicit confirmation. It records the recipient snapshot without a separate payee verification step. Partial payments cannot exceed the approved amount. Another outstanding staff advance blocks a new advance to that person.
 
 **Payments use confirmed manual recording.** Finance completes and independently verifies the actual Cash, Bank, M-Pesa or configured Other payment outside the portal, then records it. The application does not initiate provider transfers. No provider integration or callback credentials were supplied; automated bank/M-Pesa transfers are not implemented or represented as successful.
 
 Accountability records actual expense dates and reports with receipts. A refund requires a reference, destination account and proof; Finance independently confirms receipt before accepting it. Pending or returned submissions do not reduce outstanding balances. Accepted spending plus accepted refunds cannot exceed funds actually disbursed. Settlement requires zero staff balance and no pending accountability. Closing cancels further disbursement, retains history, and releases unused approval/refunds from the budget commitment; final accepted spending/supplier payments remain budget usage.
 
-Supplier payments use the same approval, budget, proof, partial-payment and immutable cashbook controls. Finance Officers submit; an Admin approves. The same officer may then record the independently confirmed supplier payment. The request's verified supplier identity is retained in every confirmed payment.
+Supplier payments use the same approval, budget, proof, partial-payment and immutable cashbook controls. Finance Officers submit; an Admin approves. The same officer may then record the independently confirmed supplier payment. The payee data available on the request is retained as a payment snapshot.
 
 ## One company expense register
 
@@ -41,7 +41,7 @@ Supplier payments use the same approval, budget, proof, partial-payment and immu
 
 The register reads seven mutually exclusive streams so a cost is counted exactly once: approved company expenses (`R-`), accepted receipt spending against staff advances (`A-`), supplier payments with no purchase-order invoice (`D-`), purchase-order-backed cost of sales (`S-`, reported as cost of sales rather than expense), operating cashbook postings (`O-`), advances carrying no accepted accountability yet (`V-`), and approved-but-unpaid commitments (`C-`). The database enforces the guard behind it: `charm.finance_requests` permits at most one row per `(source_type, source_id)`, so an upstream document cannot be re-keyed as a second expense.
 
-A company expense paid to a named supplier that is not a verified payee still disburses: the payment captures the paid-from account and snapshots the recipient text, matching the server rule for `kind='expense'`. Retired categories and departments stay visible in Categories & departments so they can be reinstated, while entry forms only offer active ones.
+A company expense disburses without a separate verified payee record: the payment captures the paid-from account and snapshots available recipient text. Retired categories and departments stay visible in Categories & departments so they can be reinstated, while entry forms only offer active ones.
 
 ## Existing data and finance tools
 

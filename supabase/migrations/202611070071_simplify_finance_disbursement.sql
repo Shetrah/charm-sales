@@ -21,8 +21,7 @@ begin
  if v<=0 or paid+v>r.approved_amount then raise exception 'overpayment';end if;
  if r.kind='expense' then
   select * into payee from charm.finance_payees where finance_payees.id=r.payee_id;
-  if payee.id is null and coalesce(length(trim(coalesce(r.recipient,''))),0)=0 then raise exception 'payeeMissing';end if;
-  snapshot:=jsonb_build_object('name',coalesce(payee.name,nullif(trim(r.recipient),'')),'details',coalesce(nullif(payee.details,''),'Company expense recipient'),'kind','expense');
+  snapshot:=jsonb_build_object('name',coalesce(nullif(trim(payee.name),''),nullif(trim(coalesce(r.recipient,'')),''),'Expense recipient'),'details',coalesce(nullif(payee.details,''),'Recipient recorded with payment'),'kind','expense');
  elsif r.kind='staff' then
   select name into staff_name from charm.users where users.id=r.owner_id and active;
   if staff_name is null then raise exception 'staffInactive';end if;
@@ -30,8 +29,7 @@ begin
   snapshot:=jsonb_build_object('name',coalesce(payee.name,staff_name),'details',coalesce(nullif(payee.details,''),'Staff payment'),'kind','staff','staff_id',r.owner_id);
  else
   select * into payee from charm.finance_payees where finance_payees.id=r.payee_id;
-  if payee.id is null then raise exception 'payeeMissing';end if;
-  snapshot:=to_jsonb(payee);
+  snapshot:=jsonb_build_object('name',coalesce(nullif(trim(payee.name),''),nullif(trim(coalesce(r.recipient,'')),''),'Supplier / recipient'),'details',coalesce(nullif(payee.details,''),'Recipient recorded with payment'),'kind',r.kind,'payee_id',r.payee_id);
  end if;
  -- Keep the separate outstanding-advance safeguard; only recipient verification
  -- has been removed from the recording flow.
