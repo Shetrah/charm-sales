@@ -1128,9 +1128,24 @@ dialog p { font-size: 13px; margin-bottom: 14px; }
 .finance-hero-links { display:flex;gap:10px;margin-top:18px; }
 .finance-hero-links a { display:inline-flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid #ffffff38;border-radius:11px;color:white;font-size:12px;font-weight:700;text-decoration:none;background:#ffffff0c; }
 .finance-hero-visual { position:relative;display:grid;place-items:center;width:180px;height:140px;flex:none; }
-.finance-hero-visual>span { z-index:1;display:grid;place-items:center;width:82px;height:82px;border:1px solid #ffffff66;border-radius:25px;color:white;background:#ffffff20;backdrop-filter:blur(10px); }
+.finance-hero-coin { position:relative;z-index:2;display:grid;place-items:center;width:82px;height:82px;border:1px solid #ffffff66;border-radius:25px;color:white;background:#ffffff20;backdrop-filter:blur(10px);box-shadow:0 12px 34px #120c4238;animation:finance-coin-float 4.5s ease-in-out infinite; }
 .finance-hero-ring { position:absolute;width:120px;height:120px;border:1px solid #ffffff2c;border-radius:50%; }
 .finance-hero-ring.ring-two { width:160px;height:160px;border-style:dashed; }
+.finance-hero-ring.ring-one { animation:finance-ring-pulse 5s ease-in-out infinite; }
+.finance-hero-ring.ring-two { animation:finance-ring-pulse 7s ease-in-out infinite reverse; }
+.finance-currency-mark { position:absolute;z-index:1;color:#fff;font-style:normal;font-weight:800;text-shadow:0 4px 16px #100b3c70;animation:finance-currency-drift 6s ease-in-out infinite; }
+.mark-dollar { top:8px;left:17px;font-size:20px;animation-delay:-1.2s; }
+.mark-euro { top:17px;right:9px;font-size:19px;animation-delay:-3.8s; }
+.mark-pound { bottom:7px;left:21px;font-size:18px;animation-delay:-2.5s; }
+.mark-kes { right:7px;bottom:19px;color:#c9fff7;font-size:10px;letter-spacing:.07em;animation-delay:-4.4s; }
+.finance-hero-bubble { position:absolute;display:block;border:1px solid #ffffff35;border-radius:50%;background:radial-gradient(circle at 32% 28%,#ffffff55,#ffffff08 64%);box-shadow:inset 0 0 12px #ffffff13;animation:finance-bubble-drift 8s ease-in-out infinite; }
+.bubble-one { top:4px;left:55px;width:13px;height:13px;animation-delay:-2s; }
+.bubble-two { right:33px;bottom:2px;width:22px;height:22px;animation-delay:-5s; }
+.bubble-three { top:29px;right:34px;width:8px;height:8px;animation-delay:-3s; }
+@keyframes finance-currency-drift { 0%,100% { transform:translate3d(0,0,0) rotate(-5deg);opacity:.72; } 50% { transform:translate3d(3px,-10px,0) rotate(7deg);opacity:1; } }
+@keyframes finance-bubble-drift { 0%,100% { transform:translate3d(0,5px,0) scale(.9);opacity:.45; } 50% { transform:translate3d(-4px,-10px,0) scale(1.08);opacity:.9; } }
+@keyframes finance-coin-float { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-4px); } }
+@keyframes finance-ring-pulse { 0%,100% { opacity:.45;transform:scale(.96); } 50% { opacity:.95;transform:scale(1.04); } }
 .finance-executive .finance-kpis { grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:15px; }
 .finance-executive .finance-kpis>a.finance-exec-kpi { position:relative;display:flex;flex-direction:column;gap:12px;min-height:142px;padding:19px 20px;border:1px solid var(--cm-border);border-radius:18px;background:var(--cm-surface);text-decoration:none;box-shadow:0 4px 18px #171d3b08;transition:transform .18s,box-shadow .18s; }
 .finance-executive .finance-kpis>a.finance-exec-kpi:hover { transform:translateY(-3px);box-shadow:0 14px 28px #171d3b12; }
@@ -1149,7 +1164,7 @@ dialog p { font-size: 13px; margin-bottom: 14px; }
 .finance-executive .finance-charts>section { border:1px solid var(--cm-border);border-radius:19px;box-shadow:0 6px 24px #171d3b08; }
 @media(max-width:950px){.finance-executive .finance-kpis,.finance-executive .finance-kpis-cash{grid-template-columns:repeat(2,minmax(0,1fr))}.finance-hero-visual{width:120px}}
 @media(max-width:620px){.finance-executive > .page-heading{align-items:flex-start}.finance-executive .finance-executive-actions{width:100%;flex-wrap:wrap}.finance-executive-hero{min-height:0;padding:22px}.finance-hero-visual{display:none}.finance-executive-copy h2{font-size:25px}.finance-executive .finance-kpis,.finance-executive .finance-kpis-cash{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.finance-executive .finance-kpis>a.finance-exec-kpi{min-height:125px;padding:14px}.finance-executive .finance-kpis-cash>a{padding:13px}.finance-executive .finance-kpis-cash>a>strong{font-size:16px}}
-@media(prefers-reduced-motion:reduce){.finance-executive .finance-kpis>a.finance-exec-kpi{transition:none}}
+@media(prefers-reduced-motion:reduce){.finance-executive .finance-kpis>a.finance-exec-kpi{transition:none}.finance-currency-mark,.finance-hero-bubble,.finance-hero-coin,.finance-hero-ring{animation:none!important}}
 
 /* Floating company messaging */
 .chat-launcher { position:fixed;right:26px;bottom:26px;z-index:55;display:flex;align-items:center;gap:10px;min-height:54px;padding:0 17px;border:0;border-radius:18px;color:#fff;background:linear-gradient(135deg,#3920aa,#6748ed);box-shadow:0 12px 32px #29156555;font:inherit;font-weight:700;cursor:pointer; }
@@ -1432,7 +1447,9 @@ dialog p { font-size: 13px; margin-bottom: 14px; }
 .payroll-page>.records>.toolbar{gap:12px;padding-bottom:12px}
 .payroll-page .payroll-tabs{display:flex;gap:7px;overflow-x:auto;margin:0 0 14px;padding:5px;border:1px solid var(--cm-border);border-radius:13px;background:var(--cm-surface-2);scrollbar-width:thin}
 .payroll-page .payroll-tabs button{min-height:38px;padding:0 14px;border:1px solid transparent;border-radius:9px;color:var(--cm-muted);background:transparent;font-size:11px;font-weight:700;white-space:nowrap}
-.payroll-page .payroll-tabs button.selected{border-color:color-mix(in srgb,var(--cm-violet) 18%,transparent);color:var(--cm-violet);background:var(--cm-surface);box-shadow:0 3px 10px #17152d0b}
+.payroll-page .payroll-tabs button{position:relative;border-color:color-mix(in srgb,var(--cm-border) 55%,transparent);color:var(--cm-muted);background:color-mix(in srgb,var(--cm-surface) 65%,transparent)}
+.payroll-page .payroll-tabs button.selected,.payroll-page .payroll-tabs button.selected:hover{border-color:#9a8aff!important;color:#fff!important;background:linear-gradient(135deg,#816aff,#5638e8)!important;box-shadow:0 5px 18px #674cf577,inset 0 1px #ffffff40!important;transform:translateY(-1px);font-weight:800}
+.payroll-page .payroll-tabs button.selected:after{content:'';position:absolute;right:12px;bottom:3px;left:12px;height:2px;border-radius:2px;background:#72efe0;box-shadow:0 0 8px #72efe099}
 @media(max-width:1050px){.payroll-page>.payroll-heading{align-items:flex-start;flex-direction:column}.payroll-heading .row-actions{justify-content:flex-start}.payroll-page .payroll-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px){.payroll-page>.payroll-heading{gap:16px;padding:18px;border-radius:17px}.payroll-heading .row-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}.payroll-heading .row-actions button{min-width:0;padding:0 9px;font-size:10px}.payroll-period-panel{grid-template-columns:minmax(0,1fr);gap:12px;padding:15px}.payroll-page .payroll-kpis{gap:9px}.payroll-page .payroll-kpi-card{min-height:112px;padding:13px}.payroll-page .payroll-kpi-card>strong{font-size:21px}.payroll-breakdown{padding:0 12px}.payroll-breakdown>div{align-items:flex-start;flex-direction:column;gap:5px;padding:11px 2px}.payroll-breakdown>div+div{margin-left:12px;padding-left:14px}.payroll-page>.records{padding:13px;border-radius:16px}}
 @media(max-width:370px){.payroll-page .payroll-kpis{grid-template-columns:minmax(0,1fr)}.payroll-page .payroll-kpi-card{min-height:100px}}
