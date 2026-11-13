@@ -1374,7 +1374,14 @@ dialog p { font-size: 13px; margin-bottom: 14px; }
 
 /* Company expense register: scannable records on desktop and mobile */
 .expense-register>.toolbar{align-items:center}
-.expense-register-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;padding:14px}
+.expense-register-table{display:block;margin:0 0 12px}
+.expense-register-table table{min-width:760px}
+.expense-register-table th,.expense-register-table td{padding:13px 14px;white-space:nowrap}
+.expense-register-table td{font-size:11px}
+.expense-register-table td:nth-child(5){font-variant-numeric:tabular-nums;font-weight:700}
+.expense-register-view{padding:5px 8px;border:0;border-radius:7px;color:var(--cm-primary);background:transparent;font:inherit;font-size:10px;font-weight:700;cursor:pointer}
+.expense-register-view:hover{background:var(--cm-violet-soft)}
+.expense-register-cards{display:none}
 .expense-register-card{display:flex;min-width:0;flex-direction:column;padding:17px;border:1px solid var(--cm-border);border-radius:17px;background:var(--cm-surface);box-shadow:0 5px 18px #191b3508;transition:transform .16s,box-shadow .16s}
 .expense-register-card:hover{transform:translateY(-2px);box-shadow:0 11px 26px #191b3512}
 .expense-register-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;min-width:0;padding-bottom:13px;border-bottom:1px solid var(--cm-border)}
@@ -1401,6 +1408,7 @@ dialog p { font-size: 13px; margin-bottom: 14px; }
 .expense-register-card-foot button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:34px;padding:0 11px;border:1px solid color-mix(in srgb,var(--cm-violet) 22%,var(--cm-border));border-radius:10px;color:var(--cm-violet);background:var(--cm-violet-soft);font-size:10px;font-weight:750;cursor:pointer}
 .expense-register-card-foot button:hover{border-color:var(--cm-violet);background:color-mix(in srgb,var(--cm-violet-soft) 70%,var(--cm-surface))}
 @media(max-width:1050px){.expense-register-cards{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:760px){.expense-register-table{display:none}.expense-register-cards{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;padding:10px}}
 @media(max-width:600px){.expense-register-cards{gap:10px;padding:10px}.expense-register-card{padding:14px;border-radius:15px}.expense-register-card-head{gap:8px}.expense-register-title h3{font-size:13px}.expense-register-badges{max-width:38%}.expense-register-amounts{gap:5px;padding:9px}.expense-register-amounts>div+div{padding-left:7px}.expense-register-amounts strong{font-size:11px}.expense-register-details{gap:0 10px}.expense-register-card-foot{padding-top:10px}}
 @media(max-width:370px){.expense-register-details{grid-template-columns:minmax(0,1fr)}.expense-register-badges{max-width:36%}}
 @media(max-width:1000px){.profile-edit-grid{grid-template-columns:minmax(0,1.2fr) minmax(260px,.8fr)}.profile-edit-card,.profile-summary,.profile-preferences{padding:18px}}
