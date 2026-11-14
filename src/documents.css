@@ -145,6 +145,9 @@
  .commercial-doc small{color:#424750}
  .commercial-doc .doc-incomplete{color:#704f00}
  .pdf-print-host{display:block!important;width:100%!important;max-width:none!important;margin:0!important;padding:0!important;background:#fff!important}
+ .pdf-copy{display:flex!important;flex-direction:column!important;gap:1mm;break-inside:avoid;page-break-inside:avoid}
+ .pdf-copy+.pdf-copy{break-before:page;page-break-before:always}
+ .pdf-copy-label{padding-bottom:1mm;text-align:right;color:#2905a1!important;font-size:8pt;font-weight:750;letter-spacing:.5pt;text-transform:uppercase}
  .doc-letterhead{grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:2mm;padding-bottom:1.5mm;border-bottom:1.2pt solid #00a9a2}
  .doc-brand{gap:2mm}
  .doc-brand img{width:10mm;height:10mm;padding:.5mm;border-radius:.7mm}

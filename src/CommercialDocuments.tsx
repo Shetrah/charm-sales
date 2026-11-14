@@ -183,7 +183,8 @@ export function OrderDocumentViewer({scope,orderId,initial='invoice',onClose}:{s
   if(!output){window.print();return;}
   const styles=Array.from(document.querySelectorAll('link[rel="stylesheet"],style')).map(node=>node.outerHTML).join('');
   output.document.open();
-  output.document.write(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><base href="${window.location.origin}/"><title>${kind==='invoice'?'Invoice':'Delivery note'}</title>${styles}<style>html,body{margin:0!important;padding:0!important;background:#fff!important;color:#151515!important}body.pdf-print-host{display:block!important;overflow:visible!important}body.pdf-print-host main{display:block!important;width:100%!important;max-width:none!important;margin:0!important;padding:0!important;background:#fff!important}</style></head><body class="pdf-print-host"><main class="pdf-print-host">${sheet.outerHTML}</main></body></html>`);
+  const copies=`<section class="pdf-copy"><div class="pdf-copy-label">${t('customerCopy')}</div>${sheet.outerHTML}</section><section class="pdf-copy"><div class="pdf-copy-label">${t('companyCopy')}</div>${sheet.outerHTML}</section>`;
+  output.document.write(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><base href="${window.location.origin}/"><title>${kind==='invoice'?'Invoice':'Delivery note'}</title>${styles}<style>html,body{margin:0!important;padding:0!important;background:#fff!important;color:#151515!important}body.pdf-print-host{display:block!important;overflow:visible!important}body.pdf-print-host main{display:block!important;width:100%!important;max-width:none!important;margin:0!important;padding:0!important;background:#fff!important}</style></head><body class="pdf-print-host"><main class="pdf-print-host">${copies}</main></body></html>`);
   output.document.close();
   const waitFor=(element:HTMLLinkElement)=>element.sheet?Promise.resolve():new Promise<void>(resolve=>{element.addEventListener('load',()=>resolve(),{once:true});element.addEventListener('error',()=>resolve(),{once:true});setTimeout(resolve,3000);});
   void Promise.all(Array.from(output.document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'),waitFor)).then(async()=>{
@@ -199,9 +200,9 @@ export function OrderDocumentViewer({scope,orderId,initial='invoice',onClose}:{s
     <button type="button" role="tab" aria-selected={kind==='invoice'} className={kind==='invoice'?'active':''} onClick={()=>setKind('invoice')}>{t('documentInvoiceTitle')}</button>
     {hasDelivery&&<button type="button" role="tab" aria-selected={kind==='delivery'} className={kind==='delivery'?'active':''} onClick={()=>setKind('delivery')}>{t('documentDeliveryTitle')}</button>}
    </div>
-   <button className="primary" type="button" disabled={q.isPending||!q.data} onClick={downloadDocumentPdf}><Download size={16}/>{t('printDocument')}</button>
+   <button className="primary" type="button" disabled={q.isPending||!q.data||(kind==='delivery'&&!hasDelivery)} onClick={downloadDocumentPdf}><Download size={16}/>{t('printDocument')}</button>
   </div>
-  {q.isPending?<Loading/>:q.isError?<ErrorNotice error={q.error} retry={()=>q.refetch()}/>:q.data&&<><div className="doc-scroll"><DocumentSheet kind={kind} payload={q.data}/></div><p className="field-note doc-hint">{t(kind==='invoice'?'documentPrintHint':'deliveryDocumentHint')}</p></>}
+  {q.isPending?<Loading/>:q.isError?<ErrorNotice error={q.error} retry={()=>q.refetch()}/>:q.data&&kind==='delivery'&&!hasDelivery?<p className="notice" role="status">{t('deliveryNoteUnavailable')}</p>:q.data&&<><div className="doc-scroll"><DocumentSheet kind={kind} payload={q.data}/></div><p className="field-note doc-hint">{t(kind==='invoice'?'documentPrintHint':'deliveryDocumentHint')}</p></>}
   <div className="dialog-actions doc-actions"><button type="button" onClick={onClose}>{t('close')}</button></div>
  </Dialog>;
 }
