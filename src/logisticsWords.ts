@@ -69,7 +69,7 @@ export const logisticsWords = {
  deliveryNumber:['Delivery no.','配送单号'],
  deliveryNote:['Delivery note','配送单'],
  openDeliveryNote:['Open delivery note','查看配送单'],
- printDocument:['Print','打印'],
+ printDocument:['Download PDF','下载 PDF'],
  deliveryDocumentHint:['Print or save this delivery note for the client. It shows order lines, invoice status and any credit notes.','打印或保存配送单交给客户，包含订单明细、发票状态和贷项票据。'],
  invoice:['Invoice','发票'],
  invoiceNotIssued:['No invoice has been issued for this order.','此订单尚未开具发票。'],

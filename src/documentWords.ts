@@ -32,6 +32,8 @@ export const documentWords = {
  documentDeliveryTitle:['Delivery Note','配送单'],
  documentTabs:['Document type','单据类型'],
  documentView:['Documents','查看单据'],
+ downloadInvoicePdf:['Download invoice PDF','下载发票 PDF'],
+ documentThanks:['Thank you for your business','感谢您的惠顾'],
  documentGenerated:['Generated','生成时间'],
  documentNumber:['Document no.','单据编号'],
  documentIssueDate:['Issued','开具时间'],

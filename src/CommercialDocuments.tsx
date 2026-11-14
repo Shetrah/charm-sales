@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Printer } from 'lucide-react';
+import { Download } from 'lucide-react';
 import type { Row } from './lib/data';
 import { formatBusinessDate, formatBusinessDateTime } from './lib/dates';
 import { formatMoney } from './lib/presentation';
@@ -49,13 +49,17 @@ function Parties({payload,kind}:{payload:Row;kind:Kind}) {
    {kind==='invoice'&&!!payload.invoice&&balance>0&&<p className="doc-party-note">{t('balanceDue')} {money(balance,language)}</p>}
   </div>
   <div className="doc-party">
-   <span className="doc-party-label">{kind==='invoice'?t('documentOrderPlacedBy'):t('documentDeliverTo')}</span>
-   {!!delivery.scheduled_on&&<p><strong>{t('scheduledFor')}</strong> {dateText(delivery.scheduled_on,language)}</p>}
-   {!!delivery.driver_name&&<p>{delivery.driver_name}{delivery.driver_phone?` · ${delivery.driver_phone}`:''}</p>}
-   {!!delivery.vehicle&&<p>{t('vehicle')} · {delivery.vehicle}</p>}
-   {!!salesperson.name&&<p>{t('documentAccountManager')} · {salesperson.name}{salesperson.staff_code?` · ${salesperson.staff_code}`:''}</p>}
-   {!!salesperson.phone&&<p>{salesperson.phone}</p>}
-   {!delivery.scheduled_on&&!salesperson.name&&<p>{t('documentCollectionHint')}</p>}
+   <span className="doc-party-label">{kind==='invoice'?t('documentAccountManager'):t('documentDeliverTo')}</span>
+   {kind==='invoice'?<>
+    <strong>{salesperson.name||t('documentCollectionHint')}</strong>
+    {!!salesperson.staff_code&&<p>{salesperson.staff_code}</p>}
+    {!!salesperson.phone&&<p>{salesperson.phone}</p>}
+   </>:<>
+    {!!delivery.scheduled_on&&<p><strong>{t('scheduledFor')}</strong> {dateText(delivery.scheduled_on,language)}</p>}
+    {!!delivery.driver_name&&<p>{delivery.driver_name}{delivery.driver_phone?` · ${delivery.driver_phone}`:''}</p>}
+    {!!delivery.vehicle&&<p>{t('vehicle')} · {delivery.vehicle}</p>}
+    {!delivery.scheduled_on&&!delivery.driver_name&&!delivery.vehicle&&<p>{t('documentCollectionHint')}</p>}
+   </>}
   </div>
  </section>;
 }
@@ -116,7 +120,7 @@ function Signatures({payload,kind}:{payload:Row;kind:Kind}) {
  const {t} = usePreferences();
  const sign=`${t('documentSignature')} · ${t('date')}`;
  const blocks:[string,string,string][] = kind==='invoice'
-  ? [[t('documentPreparedBy'), String(payload.salesperson?.name??''), t('documentCompanyStamp')], [t('documentAuthorisedSignatory'), '', sign], [t('documentReceivedBy'), '', sign]]
+  ? [[t('documentAuthorisedSignatory'), '', sign]]
   : [[t('documentDeliveredBy'), String(payload.delivery?.driver_name??''), sign], [t('documentReceivedBy'), '', sign], [t('documentGoodsChecked'), '', t('documentQuantityConfirmed')]];
  return <footer className="doc-sign">{blocks.map(([label,value,hint])=><div key={label}><i>{value}</i><span>{label}</span><small>{hint}</small></div>)}</footer>;
 }
@@ -130,7 +134,7 @@ export function DocumentSheet({kind,payload}:{kind:Kind;payload:Row}) {
  const rows:Row[] = kind==='invoice' ? (payload.items??[]) : (delivery?.items?.length ? delivery.items : payload.items??[]);
  const number = kind==='invoice' ? invoice?.invoice_number : delivery?.delivery_number;
  const facts:[string,string][] = ((kind==='invoice'
-  ? [[t('documentNumber'),String(number??`#${order.id}`)],[t('documentIssueDate'),instantText(invoice?.issued_at,language)],[t('due_date'),dateText(invoice?.due_date,language)],[t('order'),`#${order.id}`],[t('documentContractReference'),String(order.contract_reference??'')],[t('documentLot'),String(invoice?.batch_lot??'')],[t('documentCustomerType'),order.customer_type?t(order.customer_type==='wholesaler'?'orderTypeWholesaler':'orderTypeRetailer'):''],[t('documentTaxStatus'),invoice?.etims_control?`${t('documentTaxSubmitted')} · ${invoice.etims_control}`:t('documentTaxPending')]]
+  ? [[t('documentIssueDate'),instantText(invoice?.issued_at,language)],[t('due_date'),dateText(invoice?.due_date,language)],[t('order'),`#${order.id}`],[t('documentContractReference'),String(order.contract_reference??'')],[t('documentLot'),String(invoice?.batch_lot??'')],[t('documentCustomerType'),order.customer_type?t(order.customer_type==='wholesaler'?'orderTypeWholesaler':'orderTypeRetailer'):''],[t('documentTaxStatus'),invoice?.etims_control?`${t('documentTaxSubmitted')} · ${invoice.etims_control}`:t('documentTaxPending')]]
   : [[t('documentNumber'),String(number??'')],[t('scheduledFor'),dateText(delivery?.scheduled_on,language)],[t('order'),`#${order.id}`],[t('documentContractReference'),String(order.contract_reference??'')],[t('status'),delivery?.status?t(DELIVERY_STATUS[delivery.status]??delivery.status):''],[t('documentOrderDate'),instantText(order.confirmed_at,language)],[t('documentClientSignatureBy'),String(order.contract_signed_by??'')]]
  ) as [string,string][]).filter(([,value])=>!!value);
  const bottles = rows.reduce((sum,row)=>sum+Number(row.bottles??(row.unit==='carton'?0:row.quantity??0)),0);
@@ -140,13 +144,16 @@ export function DocumentSheet({kind,payload}:{kind:Kind;payload:Row}) {
  return <article className={`commercial-doc commercial-${kind}`}>
   <Letterhead company={company}/>
   <section className="doc-headline">
-   <div className="doc-headline-title"><span className="doc-kicker">CHARM KENYA</span><h3>{kind==='invoice'?t('documentInvoiceTitle'):t('documentDeliveryTitle')}</h3><strong className="doc-number">{number||`#${order.id}`}</strong></div>
+   <div className="doc-headline-title"><h3>{kind==='invoice'?t('documentInvoiceTitle'):t('documentDeliveryTitle')}</h3><strong className="doc-number">{number||`#${order.id}`}</strong></div>
    <dl className="doc-facts">{facts.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
   </section>
   <Parties payload={payload} kind={kind}/>
   <Lines rows={rows} kind={kind}/>
   {kind==='invoice'
-   ? <section className="doc-summary"><Amounts payload={payload}/><PaymentInstructions company={company}/></section>
+   ? <section className="doc-summary doc-invoice-summary">
+    <div className="doc-business-notes"><strong>{t('documentThanks')}</strong>{!!terms&&<p className="doc-terms">{terms}</p>}<PaymentInstructions company={company}/></div>
+    <Amounts payload={payload}/>
+   </section>
    : <section className="doc-summary doc-summary-delivery">
     <div className="doc-amounts"><table><tbody>
      <tr className="doc-total-row"><th>{t('documentTotalLines')}</th><td>{rows.length}</td></tr>
@@ -158,7 +165,7 @@ export function DocumentSheet({kind,payload}:{kind:Kind;payload:Row}) {
    </section>}
   {!!delivery?.failure_reason&&<p className="doc-reason">{delivery.failure_reason}</p>}
   <Signatures payload={payload} kind={kind}/>
-  {!!terms&&<p className="doc-terms">{terms}</p>}
+  {kind==='delivery'&&!!terms&&<p className="doc-terms">{terms}</p>}
   {!!company.footer_note&&<p className="doc-footer-note">{company.footer_note}</p>}
   <p className="doc-generated">{t('documentGenerated')} {instantText(new Date(),language)} · Africa/Nairobi (EAT)</p>
  </article>;
@@ -169,13 +176,30 @@ export function OrderDocumentViewer({scope,orderId,initial='invoice',onClose}:{s
  const [kind,setKind]=useState<Kind>(initial);
  const q=useQuery({queryKey:[scope,'order-document-payload',orderId],retry:false,queryFn:()=>rpc<Row>('sales_document_payload',{p_order:orderId})});
  const hasDelivery=!!q.data?.delivery;
+ function downloadDocumentPdf(){
+  const sheet=document.querySelector<HTMLElement>('.doc-scroll .commercial-doc');
+  if(!sheet)return;
+  const output=window.open('','_blank');
+  if(!output){window.print();return;}
+  const styles=Array.from(document.querySelectorAll('link[rel="stylesheet"],style')).map(node=>node.outerHTML).join('');
+  output.document.open();
+  output.document.write(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><base href="${window.location.origin}/"><title>${kind==='invoice'?'Invoice':'Delivery note'}</title>${styles}<style>html,body{margin:0!important;padding:0!important;background:#fff!important;color:#151515!important}body.pdf-print-host{display:block!important;overflow:visible!important}body.pdf-print-host main{display:block!important;width:100%!important;max-width:none!important;margin:0!important;padding:0!important;background:#fff!important}</style></head><body class="pdf-print-host"><main class="pdf-print-host">${sheet.outerHTML}</main></body></html>`);
+  output.document.close();
+  const waitFor=(element:HTMLLinkElement)=>element.sheet?Promise.resolve():new Promise<void>(resolve=>{element.addEventListener('load',()=>resolve(),{once:true});element.addEventListener('error',()=>resolve(),{once:true});setTimeout(resolve,3000);});
+  void Promise.all(Array.from(output.document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'),waitFor)).then(async()=>{
+   await output.document.fonts.ready;
+   await Promise.all(Array.from(output.document.images,image=>image.decode().catch(()=>undefined)));
+   output.addEventListener('afterprint',()=>output.close(),{once:true});
+   output.focus();output.print();
+  });
+ }
  return <Dialog className="doc-dialog" title={t(kind==='invoice'?'documentInvoiceTitle':'documentDeliveryTitle')} onClose={onClose}>
   <div className="doc-toolbar">
    <div className="field-tabs doc-tabs" role="tablist" aria-label={t('documentTabs')}>
     <button type="button" role="tab" aria-selected={kind==='invoice'} className={kind==='invoice'?'active':''} onClick={()=>setKind('invoice')}>{t('documentInvoiceTitle')}</button>
     {hasDelivery&&<button type="button" role="tab" aria-selected={kind==='delivery'} className={kind==='delivery'?'active':''} onClick={()=>setKind('delivery')}>{t('documentDeliveryTitle')}</button>}
    </div>
-   <button className="primary" type="button" disabled={q.isPending} onClick={()=>window.print()}><Printer size={16}/>{t('printDocument')}</button>
+   <button className="primary" type="button" disabled={q.isPending||!q.data} onClick={downloadDocumentPdf}><Download size={16}/>{t('printDocument')}</button>
   </div>
   {q.isPending?<Loading/>:q.isError?<ErrorNotice error={q.error} retry={()=>q.refetch()}/>:q.data&&<><div className="doc-scroll"><DocumentSheet kind={kind} payload={q.data}/></div><p className="field-note doc-hint">{t(kind==='invoice'?'documentPrintHint':'deliveryDocumentHint')}</p></>}
   <div className="dialog-actions doc-actions"><button type="button" onClick={onClose}>{t('close')}</button></div>
