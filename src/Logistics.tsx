@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowRight, Boxes, CalendarDays, CircleAlert, ClipboardList, Factory, FileText, PackageCheck, PackagePlus, Plus, Search, Truck, type LucideIcon } from 'lucide-react';
+import { ArrowRight, Boxes, CalendarDays, Check, CircleAlert, ClipboardList, Factory, FileText, PackageCheck, PackagePlus, Plus, Search, Truck, type LucideIcon } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { Row } from './lib/data';
 import { formatBusinessDate, formatBusinessDateTime, nairobiDate } from './lib/dates';
@@ -20,6 +20,7 @@ export default function Logistics({scope,desk=false,initial='overview'}:{scope:s
  const [tab,setTab]=useState<Tab>(initialTab);const [filter,setFilter]=useState('');const [stockSearch,setStockSearch]=useState('');const [receiveProduct,setReceiveProduct]=useState('');const [receiveQuantity,setReceiveQuantity]=useState('');
  useEffect(()=>{setTab(initial==='inventory'&&params.get('tab')==='ledger'?'ledger':initial);},[initial,params]);
  const [plan,setPlan]=useState<Row|null>(null);const [production,setProduction]=useState<Row|null>(null);const [action,setAction]=useState<{row:Row;status:'dispatched'|'delivered'|'failed'}|null>(null);const [note,setNote]=useState<Row|null>(null);const [documentKind,setDocumentKind]=useState<'invoice'|'delivery'>('delivery');const [countProduct,setCountProduct]=useState<Row|null>(null);
+ const [orderReview,setOrderReview]=useState<Row|null>(null);const [reviewReason,setReviewReason]=useState('');
  const [busy,setBusy]=useState(false);const [dialogError,setDialogError]=useState<unknown>();const [notice,setNotice]=useState('');
  const autoOpened=useRef<string|null>(null);const today=nairobiDate();
  const money=(value:unknown)=>Number(value??0).toLocaleString(language==='zh'?'zh-CN':'en-KE');
@@ -28,6 +29,7 @@ export default function Logistics({scope,desk=false,initial='overview'}:{scope:s
  const ledger=useQuery({queryKey:[scope,'inventory-ledger'],enabled:tab==='ledger'||tab==='inventory',refetchInterval:15000,queryFn:async()=>{const result=await rpc<{rows:Row[]}>('sales_inventory_ledger',{p_limit:60});return result.rows;}});
  const inventory=useQuery({queryKey:[scope,'logistics-inventory-summary'],enabled:tab==='overview'||tab==='inventory',refetchInterval:15000,queryFn:()=>rpc<{rows:Row[]}>('logistics_inventory_summary')});
  const intake=useQuery({queryKey:[scope,'logistics-intake'],enabled:desk,refetchInterval:15000,queryFn:async()=>rpc<Row[]>('logistics_order_intake')});
+ const pendingOrders=useQuery({queryKey:[scope,'logistics-pending-orders'],enabled:desk,refetchInterval:10000,queryFn:async()=>{const {data,error}=await supabase!.from('orders').select('id,client_id,salesperson_id,total,status,due_date,created_at').eq('status','pending').order('id',{ascending:false}).limit(100);if(error)throw error;return enrich(data as Row[]);}});
  const summary=useMemo(()=>{const rows=deliveries.data??[];return {planned:rows.filter(r=>r.status==='planned').length,dispatched:rows.filter(r=>r.status==='dispatched').length,deliveredToday:rows.filter(r=>r.status==='delivered'&&r.delivered_at&&nairobiDate(new Date(r.delivered_at))===today).length,failed:rows.filter(r=>r.status==='failed').length};},[deliveries.data,today]);
  const ready=useMemo(()=>{const assigned=new Set((deliveries.data??[]).map(row=>String(row.order_id)));return (orders.data??[]).filter(order=>!assigned.has(String(order.id)));},[orders.data,deliveries.data]);
  const gapsOf=(row:Row):Row[]=>Array.isArray(row.short_items)?row.short_items:[];
@@ -39,7 +41,8 @@ export default function Logistics({scope,desk=false,initial='overview'}:{scope:s
  const queue=intake.data??[];
  useEffect(()=>{const record=params.get('record');if(!record||!deliveries.data)return;const row=deliveries.data.find(item=>String(item.id)===record);if(row&&autoOpened.current!==record){autoOpened.current=record;setNote(row);}},[params,deliveries.data]);
  const closeNote=()=>{setNote(null);if(params.get('record')){const next=new URLSearchParams(params);next.delete('record');setParams(next,{replace:true});}};
- const refresh=async(message:string)=>{await qc.invalidateQueries({queryKey:[scope,'deliveries']});await qc.invalidateQueries({queryKey:[scope,'logistics-orders']});await qc.invalidateQueries({queryKey:[scope,'inventory-ledger']});await qc.invalidateQueries({queryKey:[scope,'logistics-inventory-summary']});await qc.invalidateQueries({queryKey:[scope,'logistics-intake']});setNotice(t(message));};
+ const refresh=async(message:string)=>{await qc.invalidateQueries({queryKey:[scope,'deliveries']});await qc.invalidateQueries({queryKey:[scope,'logistics-orders']});await qc.invalidateQueries({queryKey:[scope,'inventory-ledger']});await qc.invalidateQueries({queryKey:[scope,'logistics-inventory-summary']});await qc.invalidateQueries({queryKey:[scope,'logistics-intake']});await qc.invalidateQueries({queryKey:[scope,'logistics-pending-orders']});setNotice(t(message));};
+ async function reviewOrder(order:Row,approve:boolean,reason=''){setBusy(true);setDialogError(undefined);try{await rpc('approve_order',{p_id:Number(order.id),p_confirm:approve,p_reason:reason||null,p_contract_reviewed:false});setOrderReview(null);setReviewReason('');await refresh(approve?'orderApproved':'orderRejected');}catch(e){setDialogError(e);}finally{setBusy(false);}}
  async function saveStockCount(form:HTMLFormElement){if(!countProduct)return;const d=new FormData(form);setBusy(true);setDialogError(undefined);try{await rpc('logistics_set_finished_stock',{p_key:crypto.randomUUID(),p_product:Number(countProduct.product_id),p_count:Number(d.get('count')),p_reason:String(d.get('reason')||''),p_lot:String(d.get('lot')||'')});setCountProduct(null);await refresh('stockCountSaved');}catch(e){setDialogError(e);}finally{setBusy(false);}}
  async function receiveFinishedGoods(form:HTMLFormElement){const d=new FormData(form);setBusy(true);setDialogError(undefined);try{await rpc('logistics_receive_finished_stock',{p_key:crypto.randomUUID(),p_product:Number(d.get('product_id')),p_quantity:Number(d.get('quantity')),p_lot:String(d.get('lot')||''),p_expiry:String(d.get('expiry')||'')||null,p_reference:String(d.get('reference')||'')});setReceiveProduct('');setReceiveQuantity('');form.reset();await refresh('finishedGoodsReceived');}catch(e){setDialogError(e);}finally{setBusy(false);}}
  async function submitPlan(form:HTMLFormElement){
@@ -96,7 +99,15 @@ export default function Logistics({scope,desk=false,initial='overview'}:{scope:s
     </div>
    </section>
   </>}
-  {initial==='intake'&&tab==='intake'&&<section className="card field-list-card">
+  {initial==='intake'&&tab==='intake'&&<>
+   <section className="card field-list-card logistics-approval-queue">
+    <header><div><h2>{t('reviewOrders')}</h2><p className="field-note">{t('logisticsOrderApprovalHint')}</p></div><span className="badge">{pendingOrders.data?.length??0}</span></header>
+    {pendingOrders.isPending?<Loading/>:pendingOrders.isError?<ErrorNotice error={pendingOrders.error} retry={()=>pendingOrders.refetch()}/>:!pendingOrders.data?.length?<p className="field-empty">{t('ordersApprovalQueueEmpty')}</p>:<div className="field-records">{pendingOrders.data.map(order=><article className="field-record logistics-approval-card" key={order.id}>
+     <header><div><span className="eyebrow">{t('order_id')} #{order.id}</span><h3>{order._client??`#${order.client_id}`}</h3><small>{order._people?.[order.salesperson_id]??`#${order.salesperson_id}`} · {t('total')}: {money(order.total)}{order.due_date?` · ${t('due_date')}: ${formatBusinessDate(order.due_date,language)}`:''}</small></div><span className="badge pending">{t('pending')}</span></header>
+     <div className="field-record-actions"><button type="button" onClick={()=>setOrderReview(order)}>{t('reject')}</button><button type="button" className="primary" disabled={busy} onClick={()=>void reviewOrder(order,true)}><Check size={15}/>{t('approve')}</button></div>
+    </article>)}</div>}
+   </section>
+   <section className="card field-list-card">
    <header><div><h2>{t('intakeTitle')}</h2><p className="field-note">{t('intakeHint')}</p></div><span className="badge">{intakeStats.waiting}</span></header>
    <div className="field-cards logistics-kpis intake-kpis">
     <article className="field-card"><span className="eyebrow">{t('coveredOrders')}</span><strong>{intakeStats.covered}</strong><small>{t('planDelivery')}</small><PackageCheck size={18}/></article>
@@ -109,7 +120,7 @@ export default function Logistics({scope,desk=false,initial='overview'}:{scope:s
     {!!gaps.length&&<ul className="intake-gaps">{gaps.map((gap:Row)=><li key={String(gap.product_id)}><strong>{gap.product}</strong><span>{t('neededQuantity')}: {money(gap.needed)}</span><span className="negative">{t('productionShortfall')}: {money(gap.short)}</span></li>)}</ul>}
     <div className="field-record-actions"><button onClick={()=>{setDocumentKind('invoice');setNote({order_id:row.order_id});}}><FileText size={15}/>{t('invoice')}</button>{row.covered&&<button className="primary" onClick={()=>setPlan(planFor(row))}><Truck size={15}/>{t(row.delivery_id?'rescheduleDelivery':'planDelivery')}</button>}{!row.covered&&<button className="primary" onClick={()=>setProduction(row)}><Factory size={15}/>{t('arrangeProduction')}</button>}{!!row.delivery_id&&<button onClick={()=>{setDocumentKind('delivery');setNote(row);}}><FileText size={15}/>{t('openDeliveryNote')}</button>}</div>
    </article>;})}</div>}
-  </section>}
+   </section></>}
   {initial==='deliveries'&&tab==='deliveries'&&<>
    <div className="field-cards logistics-kpis">
     <article className="field-card"><span className="eyebrow">{t('plannedDeliveries')}</span><strong>{summary.planned}</strong><small>{t('readyToDispatch')}</small><CalendarDays size={18}/></article>
@@ -193,6 +204,12 @@ export default function Logistics({scope,desk=false,initial='overview'}:{scope:s
    <Field label="lotNumber"><input name="lot" maxLength={120} placeholder={t('optionalLot')}/></Field>
    {!!dialogError&&<ErrorNotice error={dialogError}/>}
    <div className="dialog-actions"><button type="button" disabled={busy} onClick={()=>setCountProduct(null)}>{t('cancel')}</button><button className="primary" disabled={busy}>{t(busy?'saving':'saveCount')}</button></div>
+  </form></Dialog>}
+  {orderReview&&<Dialog title={`${t('reject')} · ${t('order')} #${orderReview.id}`} onClose={()=>{if(!busy){setOrderReview(null);setReviewReason('');setDialogError(undefined);}}}><form noValidate onSubmit={e=>{e.preventDefault();if(reviewReason.trim().length<1){setDialogError(new Error('reasonRequired'));return;}void reviewOrder(orderReview,false,reviewReason.trim());}}>
+   <p className="field-note">{orderReview._client??`#${orderReview.client_id}`} · {t('total')}: {money(orderReview.total)}</p>
+   <Field label="reason"><textarea required minLength={1} maxLength={1000} value={reviewReason} onChange={e=>setReviewReason(e.target.value)}/></Field>
+   {!!dialogError&&<ErrorNotice error={dialogError}/>}
+   <div className="dialog-actions"><button type="button" disabled={busy} onClick={()=>setOrderReview(null)}>{t('cancel')}</button><button className="primary" disabled={busy||!reviewReason.trim()}>{t(busy?'saving':'reject')}</button></div>
   </form></Dialog>}
   {note&&<OrderDocumentViewer scope={scope} orderId={Number(note.order_id)} initial={documentKind} onClose={closeNote}/>}
  </main>;

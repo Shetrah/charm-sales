@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Camera, Check, ChevronLeft, ChevronRight, Download, ExternalLink, FileText,
-  History, Lock, PackageCheck, PenLine, Send, ShieldCheck, Trash2, ZoomIn, ZoomOut,
+  Camera, Check, ChevronDown, ChevronLeft, ChevronRight, Download, ExternalLink, FileText,
+  History, Lock, Package, PackageCheck, PenLine, Search, Send, ShieldCheck, Trash2, ZoomIn, ZoomOut,
 } from 'lucide-react';
 import { Dialog, ErrorNotice, Field, Lookup, Loading, Status } from './components';
 import { usePreferences } from './i18n';
@@ -151,6 +151,24 @@ export function OrderReviewContract({row,scope,onPreview}:{row:Row;scope:string;
  </section>;
 }
 
+function ProductPicker({products,value,disabled,label,searchLabel,priceLabel,wholesaleLabel,emptyLabel,selectedPrice,onChange}:{products:Row[];value:string;disabled:boolean;label:string;searchLabel:string;priceLabel:string;wholesaleLabel:string;emptyLabel:string;selectedPrice:string;onChange:(id:string)=>void}){
+ const [open,setOpen]=useState(false);const [search,setSearch]=useState('');
+ const selected=products.find(product=>String(product.product_id)===value);
+ const query=search.trim().toLocaleLowerCase();
+ const visible=products.filter(product=>[product.sku,product.category,product.capacity,product.fragrance,product.barcode].some(part=>String(part??'').toLocaleLowerCase().includes(query)));
+ const productName=(product:Row)=>[product.category,product.capacity,product.fragrance].filter(Boolean).join(' · ');
+ return <div className="order-product-picker">
+  <button type="button" className="order-product-trigger" disabled={disabled} aria-expanded={open} onClick={()=>setOpen(current=>!current)}>
+   <span className="order-product-icon"><Package size={19}/></span><span className="order-product-trigger-copy"><strong>{selected?productName(selected):label}</strong><small>{selected?`${selected.sku||`#${selected.product_id}`} · ${priceLabel}: ${selectedPrice||'—'}`:label}</small></span><ChevronDown size={17}/>
+  </button>
+  {open&&<div className="order-product-menu"><label className="order-product-search"><Search size={16}/><input autoFocus value={search} onChange={event=>setSearch(event.target.value)} placeholder={searchLabel}/><span>{visible.length}</span></label>
+   <div className="order-product-options">{visible.length?visible.map(product=><button type="button" key={String(product.product_id)} className={`order-product-option ${String(product.product_id)===value?'selected':''}`} onClick={()=>{onChange(String(product.product_id));setOpen(false);setSearch('');}}>
+    <span className="order-product-avatar"><Package size={17}/></span><span className="order-product-option-copy"><strong>{productName(product)}</strong><small>{product.sku||`#${product.product_id}`}{product.barcode?` · ${product.barcode}`:''}</small></span><span className="order-product-prices"><strong>{priceLabel}: {Number(product.retail_bottle??0).toLocaleString()}</strong><small>{wholesaleLabel}: {Number(product.wholesale_bottle??0).toLocaleString()}</small></span>
+   </button>):<p className="order-product-empty">{emptyLabel}</p>}</div>
+  </div>}
+ </div>;
+}
+
 export function OrderEditor({scope,profile,row,onClose,onSaved}:{scope:string;profile:Profile;row:Row|null;onClose:()=>void;onSaved:()=>void}){
  const {t,language}=usePreferences();const qc=useQueryClient();
  const [clientId,setClientId]=useState(String(row?.client_id??''));const [customerType,setCustomerType]=useState(String(row?.customer_type??'retailer'));
@@ -196,21 +214,21 @@ export function OrderEditor({scope,profile,row,onClose,onSaved}:{scope:string;pr
   await qc.invalidateQueries({queryKey:[scope,'order-docs',draftId]});
   setPending(current=>current.filter(entry=>entry.id!==item.id));
  }catch(next){update({stage:'error',error:next});}}
- async function persistOrder(){if(!clientId)throw new Error('missingClient');if(!validLines)throw new Error('missingOrderLines');const payload={p_id:draftId,p_client:Number(clientId),p_due:dueDate||null,p_customer_type:customerType,p_items:lines.map(line=>({product_id:Number(line.product_id),quantity:Number(line.quantity),unit:line.unit,unit_price:line.unit_price}))};const body=JSON.stringify(payload);if(!editorKey.current||editorKey.current.body!==body)editorKey.current={body,key:crypto.randomUUID()};const id=await rpc<number>('save_order_draft',{...payload,p_key:editorKey.current.key});setDraftId(id);if(contractValuesValid)await rpc('save_order_contract',{p_key:crypto.randomUUID(),p_id:id,p_reference:reference.trim(),p_signed_by:signedBy.trim(),p_terms:terms.trim(),p_customer_type:customerType});return id;}
- async function saveDraft(){setBusy(true);setError(undefined);setNotice('');try{const id=await persistOrder();editorKey.current={body:JSON.stringify({p_id:id,p_client:Number(clientId),p_due:dueDate||null,p_customer_type:customerType,p_items:lines.map(line=>({product_id:Number(line.product_id),quantity:Number(line.quantity),unit:line.unit,unit_price:line.unit_price}))}),key:editorKey.current!.key};setNotice(t(contractValuesValid?'draftSavedWithContract':'draftSaved'));await qc.invalidateQueries({queryKey:[scope,'order-docs',id]});}catch(next){setError(next);}finally{setBusy(false);}}
+ async function persistOrder(){if(!clientId)throw new Error('missingClient');if(!validLines)throw new Error('missingOrderLines');const payload={p_id:draftId,p_client:Number(clientId),p_due:dueDate||null,p_customer_type:customerType,p_items:lines.map(line=>({product_id:Number(line.product_id),quantity:Number(line.quantity),unit:line.unit,unit_price:line.unit_price}))};const body=JSON.stringify(payload);if(!editorKey.current||editorKey.current.body!==body)editorKey.current={body,key:crypto.randomUUID()};const id=await rpc<number>('save_order_draft',{...payload,p_key:editorKey.current.key});setDraftId(id);return id;}
+ async function saveDraft(){setBusy(true);setError(undefined);setNotice('');try{const id=await persistOrder();editorKey.current={body:JSON.stringify({p_id:id,p_client:Number(clientId),p_due:dueDate||null,p_customer_type:customerType,p_items:lines.map(line=>({product_id:Number(line.product_id),quantity:Number(line.quantity),unit:line.unit,unit_price:line.unit_price}))}),key:editorKey.current!.key};setNotice(t('draftSaved'));await qc.invalidateQueries({queryKey:[scope,'order-docs',id]});}catch(next){setError(next);}finally{setBusy(false);}}
  async function submitContract(){if(missing.length){setError(new Error('contractIncomplete'));setReviewOpen(true);return;}if(!confirmed){setError(new Error('contractConfirmationRequired'));return;}setBusy(true);setError(undefined);try{const id=await persistOrder();await rpc('submit_order_contract',{p_key:submitKey.current,p_id:id,p_confirm:true});const fresh=await fetchOrderStatus(id);setContractStatus(String(fresh?.contract_status??'submitted'));setOrderStatus(String(fresh?.status??'draft'));setReviewOpen(false);setConfirmed(false);setNotice(t('contractSubmittedNotice'));await qc.invalidateQueries({queryKey:[scope,'order-docs',id]});await qc.invalidateQueries({queryKey:[scope,'order-versions',id]});}catch(next){setError(next);}finally{setBusy(false);}}
- async function submitOrder(){if(!draftId)return;setBusy(true);setError(undefined);try{await rpc('submit_order_draft',{p_id:draftId});setOrderStatus('pending');onSaved();}catch(next){setError(next);}finally{setBusy(false);}}
+ async function submitOrder(){setBusy(true);setError(undefined);try{const id=await persistOrder();await rpc('submit_order_draft',{p_id:id});setOrderStatus('pending');onSaved();}catch(next){setError(next);}finally{setBusy(false);}}
  async function removeDocument(id:number){setBusy(true);setError(undefined);try{await rpc('remove_order_document',{p_id:draftId,p_document_id:id});setRemoveId(null);await qc.invalidateQueries({queryKey:[scope,'order-docs',draftId]});}catch(next){setError(next);}finally{setBusy(false);}}
  return <Dialog title={draftId?`${t('orders')} · #${draftId}`:t('create')} onClose={onClose}>
   <form noValidate onSubmit={event=>{event.preventDefault();if(editable)void saveDraft();}}>
-   <ol className="order-steps"><li className="active">{t('orderStepDetails')}</li><li>{t('orderStepContract')}</li><li>{t('orderStepDocuments')}</li><li>{t('orderStepReview')}</li></ol>
-   <p className="notice">{t('orderDraftHint')}</p>
+   <ol className="order-steps"><li className="active">{t('orderStepDetails')}</li></ol>
+   <p className="notice">{t('orderSubmissionHint')}</p>
    <section className="order-step-section"><h3><span>1</span>{t('orderStepDetails')}</h3>
     <Field label="clientSearch"><Lookup kind="clients" scope={scope} value={clientId} onChange={setClientId} label="clientSearch" required/></Field>
     <div className="form-grid"><Field label="customerType"><select disabled={!editable} value={customerType} onChange={event=>{const next=event.target.value;setCustomerTypeTouched(true);setCustomerType(next);setLines(current=>current.map(line=>line.auto&&line.product_id?{...line,unit_price:bookedPrice(line.product_id,next,line.unit)}:line));}}><option value="retailer">{t('orderTypeRetailer')}</option><option value="wholesaler">{t('orderTypeWholesaler')}</option></select></Field><Field label="due_date"><input type="date" disabled={!editable} value={dueDate} onChange={event=>setDueDate(event.target.value)}/></Field></div>
     <h3 className="inline-heading">{t('items')}</h3>
     {lines.map((line,index)=><div className="order-line" key={index}>
-     <Field label="product_id"><Lookup kind="products" scope={scope} label="productSearch" value={line.product_id} onChange={value=>setLines(current=>current.map((item,itemIndex)=>itemIndex===index?{...item,product_id:value,unit_price:item.auto?bookedPrice(value,customerType,item.unit):item.unit_price}:item))} required/></Field>
+     <Field label="product_id"><ProductPicker products={priceBook.data??[]} value={line.product_id} disabled={!editable} label={t("productSearch")} searchLabel={t("search")} priceLabel={t("price")} wholesaleLabel={t("wholesalePrice")} emptyLabel={t("noProductsFound")} selectedPrice={bookedPrice(line.product_id,customerType,line.unit)} onChange={value=>setLines(current=>current.map((item,itemIndex)=>itemIndex===index?{...item,product_id:value,unit_price:item.auto?bookedPrice(value,customerType,item.unit):item.unit_price}:item))}/></Field>
      <div className="form-grid">{(['quantity','unit','unit_price'] as const).map(key=><Field key={key} label={key}>{key==='unit'?<select disabled={!editable} value={line[key]} onChange={event=>{const next=event.target.value;setLines(current=>current.map((item,itemIndex)=>itemIndex===index?{...item,unit:next,unit_price:item.auto?bookedPrice(item.product_id,customerType,next):item.unit_price}:item));}}><option value="bottle">{t('bottle')}</option><option value="carton">{t('cartonUnit')}</option></select>:<input required disabled={!editable} type="number" min={key==='quantity'?1:.01} max={key==='quantity'?100000:999999999999} step={key==='quantity'?1:.01} value={line[key]} onChange={event=>setLines(current=>current.map((item,itemIndex)=>itemIndex===index?{...item,[key]:event.target.value,auto:key==='unit_price'?false:item.auto}:item))}/>}</Field>)}</div>
      {line.auto&&!!line.unit_price&&<small className="muted-line">{t('priceBookApplied')}</small>}
      {lines.length>1&&<button type="button" className="text-button" disabled={!editable} onClick={()=>setLines(current=>current.filter((_,itemIndex)=>itemIndex!==index))}>{t('remove')}</button>}
@@ -219,13 +237,13 @@ export function OrderEditor({scope,profile,row,onClose,onSaved}:{scope:string;pr
     <p className="muted-line">{t('priceBookOverrideHint')}</p>
     <p className="order-total">{t('total')}: {total}</p>
    </section>
-   <section className="order-step-section"><h3><span>2</span>{t('orderStepContract')}</h3>
+   {false&&<><section className="order-step-section"><h3><span>2</span>{t('orderStepContract')}</h3>
     <div className="form-grid"><Field label="contractReference"><input required disabled={!editable} minLength={3} maxLength={120} value={reference} onChange={event=>setReference(event.target.value)}/><small>{t('contractReferenceHint')}</small></Field><Field label="contractSignedBy"><input required disabled={!editable} minLength={2} maxLength={200} value={signedBy} onChange={event=>setSignedBy(event.target.value)}/><small>{t('contractSignedByHint')}</small></Field></div>
     <Field label="contractTerms"><textarea required disabled={!editable} minLength={20} maxLength={20000} value={terms} onChange={event=>setTerms(event.target.value)}/><small>{t('contractTermsHint')}</small></Field>
    </section>
    <section className="order-step-section"><h3><span>3</span>{t('orderStepDocuments')}</h3>
     <p className="muted-line">{t('documentTypesHint')}</p>
-    {!draftId&&<p className="notice">{t('orderDraftHint')}</p>}
+    {!draftId&&<p className="notice">{t('orderSubmissionHint')}</p>}
     {contractSubmitted&&<p className="notice"><Lock size={14}/>{t('contractLockedHint')}</p>}
     {editable&&draftId&&<div className="document-uploaders">
      <label className={`doc-button ${busy?'disabled':''}`}><Camera size={18}/><span>{t('captureWithCamera')}</span><input className="sr-only" type="file" accept="image/*" capture="environment" disabled={busy} onChange={event=>{addFiles(event.target.files,'contract');event.target.value='';}}/></label>
@@ -236,7 +254,7 @@ export function OrderEditor({scope,profile,row,onClose,onSaved}:{scope:string;pr
     <div className="document-list">{contractDocs.map(item=><article key={item.id} className="document-row"><span className="document-icon"><FileText size={18}/></span><div><strong>{item.file_name}</strong><small>{t('documentContract')} · {mimeLabel(item.mime_type)} · {formatBytes(item.size_bytes)}{item.page_count?` · ${item.page_count} ${t('documentPages')}`:''}</small></div><button type="button" className="text-button" onClick={()=>{setPreviewId(item.id);setPreviewOpen(true);}}>{t('viewContract')}</button>{editable&&(removeId===item.id?<><button type="button" className="text-button danger" disabled={busy} onClick={()=>void removeDocument(item.id)}>{t('removeDocument')}</button><button type="button" className="text-button" onClick={()=>setRemoveId(null)}>{t('cancel')}</button></>:<button type="button" className="text-button" disabled={busy} onClick={()=>setRemoveId(item.id)}><Trash2 size={14}/>{t('removeDocument')}</button>)}</article>)}</div>
     {!!supportingDocs.length&&<><h4>{t('supportingDocuments')}</h4><div className="document-list">{supportingDocs.map(item=><article key={item.id} className="document-row"><span className="document-icon"><FileText size={18}/></span><div><strong>{item.file_name}</strong><small>{t('documentSupporting')} · {mimeLabel(item.mime_type)} · {formatBytes(item.size_bytes)}</small></div><button type="button" className="text-button" onClick={()=>{setPreviewId(item.id);setPreviewOpen(true);}}>{t('details')}</button>{editable&&(removeId===item.id?<button type="button" className="text-button danger" disabled={busy} onClick={()=>void removeDocument(item.id)}>{t('removeDocument')}</button>:<button type="button" className="text-button" disabled={busy} onClick={()=>setRemoveId(item.id)}><Trash2 size={14}/>{t('removeDocument')}</button>)}</article>)}</div></>}
    </section>
-   {reviewOpen&&<section className="order-step-section contract-review-section"><h3><span>4</span>{t('orderStepReview')}</h3>
+   </>}{false&&reviewOpen&&<section className="order-step-section contract-review-section"><h3><span>4</span>{t('orderStepReview')}</h3>
     {!!missing.length&&<div className="notice error" role="alert"><strong>{t('missingBeforeSubmit')}</strong><ul>{missing.map(key=><li key={key}>{t(key)}</li>)}</ul></div>}
     <dl className="contract-meta"><div><dt>{t('client_id')}</dt><dd>{client.data?.name??`#${clientId}`}</dd></div><div><dt>{t('customerType')}</dt><dd>{t(customerType==='wholesaler'?'orderTypeWholesaler':'orderTypeRetailer')}</dd></div><div><dt>{t('contractReference')}</dt><dd>{reference||'—'}</dd></div><div><dt>{t('contractSignedBy')}</dt><dd>{signedBy||'—'}</dd></div><div><dt>{t('documentFiles')}</dt><dd>{contractDocs.length}</dd></div></dl>
     <p className="contract-terms-read">{terms||'—'}</p>
@@ -248,8 +266,8 @@ export function OrderEditor({scope,profile,row,onClose,onSaved}:{scope:string;pr
    <div className="dialog-actions">
     <button type="button" onClick={onClose} disabled={busy}>{t('close')}</button>
     {editable&&<button type="button" disabled={busy} onClick={()=>void saveDraft()}>{t(busy?'saving':draftId?'saveDraftChanges':'saveDraft')}</button>}
-    {editable&&!contractSubmitted&&<button type="button" className="primary" disabled={busy} onClick={()=>setReviewOpen(true)}><Send size={16}/>{t('reviewContract')}</button>}
-    {contractSubmitted&&orderStatus==='draft'&&<button type="button" className="primary" disabled={busy} onClick={()=>void submitOrder()}><Check size={16}/>{t('submitOrder')}</button>}
+    
+    {(editable||contractSubmitted)&&orderStatus==='draft'&&<button type="button" className="primary" disabled={busy} onClick={()=>void submitOrder()}><Check size={16}/>{t('submitOrder')}</button>}
    </div>
   </form>
   {previewOpen&&draftId&&<ContractPreview orderId={draftId} scope={scope} initialId={previewId} onClose={()=>setPreviewOpen(false)}/>}

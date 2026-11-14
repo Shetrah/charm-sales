@@ -1411,6 +1411,38 @@ dialog p { font-size: 13px; margin-bottom: 14px; }
 @media(max-width:760px){.expense-register-table{display:none}.expense-register-cards{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;padding:10px}}
 @media(max-width:600px){.expense-register-cards{gap:10px;padding:10px}.expense-register-card{padding:14px;border-radius:15px}.expense-register-card-head{gap:8px}.expense-register-title h3{font-size:13px}.expense-register-badges{max-width:38%}.expense-register-amounts{gap:5px;padding:9px}.expense-register-amounts>div+div{padding-left:7px}.expense-register-amounts strong{font-size:11px}.expense-register-details{gap:0 10px}.expense-register-card-foot{padding-top:10px}}
 @media(max-width:370px){.expense-register-details{grid-template-columns:minmax(0,1fr)}.expense-register-badges{max-width:36%}}
+
+/* Searchable product catalogue in the order editor */
+.order-product-picker{position:relative;width:100%}
+.order-product-trigger{display:flex;width:100%;min-height:58px;align-items:center;gap:11px;padding:9px 12px;border:1px solid var(--cm-border);border-radius:14px;color:var(--cm-text);background:var(--cm-surface);text-align:left;cursor:pointer;transition:border-color .16s,box-shadow .16s}
+.order-product-trigger:hover:not(:disabled),.order-product-trigger[aria-expanded=true]{border-color:var(--cm-violet);box-shadow:0 0 0 3px color-mix(in srgb,var(--cm-violet) 12%,transparent)}
+.order-product-trigger:disabled{opacity:.72;cursor:not-allowed}
+.order-product-icon,.order-product-avatar{display:grid;flex:none;place-items:center;border-radius:12px;color:var(--cm-violet);background:var(--cm-violet-soft)}
+.order-product-icon{width:38px;height:38px}
+.order-product-trigger-copy,.order-product-option-copy{display:flex;min-width:0;flex:1;flex-direction:column;gap:4px}
+.order-product-trigger-copy strong,.order-product-option-copy strong{overflow:hidden;color:var(--cm-text);font-size:12px;font-weight:750;text-overflow:ellipsis;white-space:nowrap}
+.order-product-trigger-copy small,.order-product-option-copy small{overflow:hidden;color:var(--cm-muted);font-size:10px;text-overflow:ellipsis;white-space:nowrap}
+.order-product-trigger>svg:last-child{color:var(--cm-muted);transition:transform .16s}
+.order-product-trigger[aria-expanded=true]>svg:last-child{transform:rotate(180deg)}
+.order-product-menu{position:absolute;z-index:35;top:calc(100% + 7px);left:0;width:min(620px,calc(100vw - 70px));padding:9px;border:1px solid var(--cm-border);border-radius:16px;background:var(--cm-surface);box-shadow:0 20px 50px #11112c30}
+.order-product-search{display:flex;align-items:center;gap:9px;padding:10px 12px;border:1px solid var(--cm-border);border-radius:11px;color:var(--cm-muted);background:var(--cm-surface-2)}
+.order-product-search input{width:100%;min-width:0;border:0;outline:0;color:var(--cm-text);background:transparent;font:inherit;font-size:12px}
+.order-product-search>span{display:grid;min-width:24px;height:24px;place-items:center;border-radius:8px;color:var(--cm-violet);background:var(--cm-violet-soft);font-size:10px;font-weight:750}
+.order-product-options{display:grid;max-height:310px;gap:4px;overflow:auto;padding-top:7px}
+.order-product-option{display:flex;align-items:center;gap:10px;padding:9px;border:1px solid transparent;border-radius:11px;color:var(--cm-text);background:transparent;text-align:left;cursor:pointer}
+.order-product-option:hover,.order-product-option.selected{border-color:color-mix(in srgb,var(--cm-violet) 25%,var(--cm-border));background:var(--cm-violet-soft)}
+.order-product-avatar{width:34px;height:34px;border-radius:10px}
+.order-product-prices{display:flex;flex:none;flex-direction:column;gap:4px;text-align:right}
+.order-product-prices strong{color:var(--cm-text);font-size:10px;font-variant-numeric:tabular-nums}
+.order-product-prices small,.order-product-empty{color:var(--cm-muted);font-size:9px}
+.order-product-empty{padding:12px;margin:0}
+@media(max-width:600px){.order-product-menu{width:min(100%,calc(100vw - 48px))}.order-product-option{gap:7px;padding:8px}.order-product-prices strong{font-size:9px}}
+.logistics-approval-queue{margin-bottom:16px}
+.logistics-approval-card{padding:16px;border:1px solid color-mix(in srgb,var(--cm-violet) 18%,var(--cm-border));border-radius:16px;background:var(--cm-surface)}
+.logistics-approval-card+.logistics-approval-card{margin-top:9px}
+.logistics-approval-card>header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.logistics-approval-card>header h3{margin:4px 0;font-size:14px}
+.logistics-approval-card .field-record-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 @media(max-width:1000px){.profile-edit-grid{grid-template-columns:minmax(0,1.2fr) minmax(260px,.8fr)}.profile-edit-card,.profile-summary,.profile-preferences{padding:18px}}
 @media(max-width:760px){.profile-page-heading{align-items:stretch}.profile-security-link{width:100%}.profile-cover{margin:12px 0 16px;border-radius:19px}.profile-cover-art{min-height:140px;padding:17px}.profile-cover-welcome{margin-right:0}.profile-cover-orbit.orbit-a{right:-30px}.profile-cover-orbit.orbit-b{right:15%}.profile-hero{gap:12px;padding:0 16px 15px}.profile-avatar-wrap{margin-top:-32px;padding:4px;border-radius:17px}.profile-avatar{width:64px;height:64px;border-radius:13px}.profile-identity-copy{padding-top:11px}.profile-identity-copy h2{font-size:17px}.profile-status{padding:7px 9px;font-size:9px}.profile-cover-footer{gap:9px 14px;padding:12px 16px}.profile-cover-footer span{font-size:9px}.profile-edit-grid{grid-template-columns:minmax(0,1fr);gap:12px}.profile-edit-card,.profile-summary,.profile-preferences{padding:17px;border-radius:17px}.profile-side{gap:12px}}
 @media(max-width:480px){.profile-cover-welcome{max-width:43%}.profile-cover-welcome strong{font-size:11px}.profile-identity-copy p{font-size:10px}.profile-status{align-self:flex-start;margin-top:14px}.profile-form-grid{grid-template-columns:minmax(0,1fr);gap:0}.profile-photo-row{flex-wrap:wrap;padding:12px}.profile-photo-action{width:100%;padding-left:65px}.profile-photo-action .media-upload{justify-content:flex-start}.profile-form-footer{align-items:stretch;flex-direction:column}.profile-form-footer .primary{justify-content:center;width:100%}.profile-cover-footer{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}}
