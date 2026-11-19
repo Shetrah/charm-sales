@@ -1,5 +1,6 @@
-const CACHE = 'charm-hub-shell-v2-2-0-notifications';
+const CACHE = 'charm-hub-shell-v2-2-1-notifications';
 const SHELL = '/';
+const OFFLINE_PAGE = '<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Charm Company Hub</title><body style="font:16px system-ui,sans-serif;max-width:36rem;margin:12vh auto;padding:1.5rem;line-height:1.6;color:#243047"><h1>You are offline</h1><p>Charm Company Hub could not reach the server. Check your connection and try again.</p><button onclick="location.reload()">Try again</button></body></html>';
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', event => {
@@ -27,7 +28,10 @@ self.addEventListener('fetch', event => {
           }
           return response;
         })
-        .catch(async () => (await caches.match(SHELL)) || Response.error()),
+        .catch(async () => (await caches.match(SHELL)) || new Response(OFFLINE_PAGE, {
+          status: 503,
+          headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
+        })),
     );
     return;
   }
