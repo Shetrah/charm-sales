@@ -3,15 +3,15 @@ export const financePages=[
  ['dashboard','financeDashboard',LayoutDashboard],['expenses','financeExpenses',Receipt],['requests','financerequests',ClipboardList],
  ['suppliers','financeSuppliers',Truck],
  ['payroll','payroll',Banknote],
- ['disbursements','financePaymentsPage',CreditCard],
- ['cashbook','financecashbook',Wallet],['contra','financeContraEntry',ArrowLeftRight],['receipts','financereceipts',ShoppingBag],
+ ['disbursements','financePaymentsPage',CreditCard],['payments','financePaymentHistory',ShoppingBag],
+ ['cashbook','financecashbook',Wallet],['contra','financeContraEntry',ArrowLeftRight],
  ['budgets','financebudgets',CalendarDays],
  ['batch_costs','financeBatchCosts',Factory],['purchases','financePurchases',Truck],['goods_receipts','financeGoodsReceipts',FileCheck2],['invoices','financeInvoices',FileText],['supplier_invoices','financeSupplierInvoices',FileText],
  ['statements','financestatements',Wallet],['accounts','financeAccounts',SlidersHorizontal],
  ['audit','financeaudit',Users],
 ] as const;
 // Expenditure reports and operating postings now read from the consolidated register, so their bookmarks land there.
-const legacyPages:Record<string,string>={expenditure:'expenses',operating:'expenses'};
+const legacyPages:Record<string,string>={expenditure:'expenses',operating:'expenses',receipts:'payments'};
 export function financePage(path:string){const page=path.split('/')[2]||'dashboard';return page==='accountability'?'requests':legacyPages[page]??(financePages.some(([key])=>key===page)?page:'dashboard');}
 export function financeLegacyPage(path:string){return legacyPages[path.split('/')[2]??''];}
 export function financePath(page:string){return page==='dashboard'?'/finance':`/finance/${page}`;}

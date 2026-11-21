@@ -45,7 +45,7 @@ begin
  if not charm.finance_reader() or p_from is null or p_to is null or p_to<p_from or p_page is null or p_page<1 or p_page>10000 then raise exception 'invalid'; end if;
  select count(*) into total from charm.payments p where (p.received_at at time zone 'Africa/Nairobi')::date between p_from and p_to and (p_status='' or p.status=p_status);
  select coalesce(jsonb_agg(to_jsonb(x) order by x.id desc),'[]'::jsonb) into rows from (
-  select p.id,p.order_id,c.name client_name,i.invoice_number,p.amount::text amount,p.reference,p.status,p.received_at,
+  select p.id,p.order_id,c.name client_name,i.invoice_number,p.amount::text amount,p.reference,p.status,p.received_at,p.proof_path,
    a.account_id,coalesce(e.entered_role,'') entered_role,
    (e.payment_id is not null and ((e.entered_role='admin' and charm.finance_role()='finance_officer') or (e.entered_role='finance_officer' and charm.finance_role()='admin'))) can_verify
   from charm.payments p join charm.orders o on o.id=p.order_id join charm.clients c on c.id=o.client_id
@@ -115,6 +115,34 @@ grant execute on function charm.admin_order_file_delete(text) to authenticated;
 drop policy if exists charm_admin_order_file_delete on storage.objects;
 create policy charm_admin_order_file_delete on storage.objects for delete to authenticated using(bucket_id='charm-private' and charm.admin_order_file_delete(name));
 
+create function charm.admin_payment_file_delete(p_path text) returns boolean language sql stable security definer set search_path='' as $$
+ select case when charm.finance_role()='admin' and p_path ~ '^payments/[0-9]+/' then
+  exists(select 1 from charm.payments p where p.id=split_part(p_path,'/',2)::bigint and p.status in ('pending','rejected') and p.proof_path=p_path)
+  else false end
+$$;
+revoke execute on function charm.admin_payment_file_delete(text) from public,anon;
+grant execute on function charm.admin_payment_file_delete(text) to authenticated;
+drop policy if exists charm_admin_payment_file_delete on storage.objects;
+create policy charm_admin_payment_file_delete on storage.objects for delete to authenticated using(bucket_id='charm-private' and charm.admin_payment_file_delete(name));
+
+create function charm.admin_delete_customer_payment(p_id bigint,p_prepare boolean default false) returns text language plpgsql security definer set search_path='' as $$
+declare p charm.payments;
+begin
+ if charm.finance_role() is distinct from 'admin' then raise exception 'forbidden'; end if;
+ select * into p from charm.payments where id=p_id for update;
+ if p.id is null then raise exception 'notFound'; end if;
+ if p.status not in ('pending','rejected')
+  or exists(select 1 from charm.finance_ledger where customer_payment_id=p_id)
+  or exists(select 1 from charm.finance_receipt_allocations where payment_id=p_id) then raise exception 'paymentImmutable'; end if;
+ if p_prepare then return p.proof_path; end if;
+ delete from charm.finance_invoice_payment_entries where payment_id=p_id;
+ delete from charm.request_receipts where submission_key=p.submission_key;
+ delete from charm.audit_logs where entity='payments' and entity_id=p_id;
+ delete from charm.payments where id=p_id;
+ perform charm.audit('paymentPermanentlyDeleted','payment_deletions',p_id,jsonb_build_object('order_id',p.order_id,'amount',p.amount,'reference',p.reference,'status',p.status));
+ return p.proof_path;
+end$$;
+
 create function charm.admin_delete_order(p_id bigint,p_prepare boolean default false) returns jsonb language plpgsql security definer set search_path='' as $$
 declare o charm.orders; paths jsonb;
 begin
@@ -145,7 +173,7 @@ begin
  return paths;
 end$$;
 
-revoke execute on function charm.finance_customer_payment_options(),charm.finance_invoice_payment_register(integer),charm.finance_customer_payment_register(date,date,text,integer),charm.finance_record_invoice_payment(uuid,bigint,text,text,date,bigint,boolean),charm.finance_verify_invoice_payment(bigint,boolean),charm.admin_delete_order(bigint,boolean) from public,anon;
-grant execute on function charm.finance_customer_payment_options(),charm.finance_invoice_payment_register(integer),charm.finance_customer_payment_register(date,date,text,integer),charm.finance_record_invoice_payment(uuid,bigint,text,text,date,bigint,boolean),charm.finance_verify_invoice_payment(bigint,boolean),charm.admin_delete_order(bigint,boolean) to authenticated;
+revoke execute on function charm.finance_customer_payment_options(),charm.finance_invoice_payment_register(integer),charm.finance_customer_payment_register(date,date,text,integer),charm.finance_record_invoice_payment(uuid,bigint,text,text,date,bigint,boolean),charm.finance_verify_invoice_payment(bigint,boolean),charm.admin_delete_customer_payment(bigint,boolean),charm.admin_delete_order(bigint,boolean) from public,anon;
+grant execute on function charm.finance_customer_payment_options(),charm.finance_invoice_payment_register(integer),charm.finance_customer_payment_register(date,date,text,integer),charm.finance_record_invoice_payment(uuid,bigint,text,text,date,bigint,boolean),charm.finance_verify_invoice_payment(bigint,boolean),charm.admin_delete_customer_payment(bigint,boolean),charm.admin_delete_order(bigint,boolean) to authenticated;
 notify pgrst,'reload schema';
 commit;
