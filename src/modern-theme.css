@@ -1509,3 +1509,45 @@ dialog p { font-size: 13px; margin-bottom: 14px; }
 @media(max-width:1050px){.payroll-page>.payroll-heading{align-items:flex-start;flex-direction:column}.payroll-heading .row-actions{justify-content:flex-start}.payroll-page .payroll-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px){.payroll-page>.payroll-heading{gap:16px;padding:18px;border-radius:17px}.payroll-heading .row-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}.payroll-heading .row-actions button{min-width:0;padding:0 9px;font-size:10px}.payroll-period-panel{grid-template-columns:minmax(0,1fr);gap:12px;padding:15px}.payroll-page .payroll-kpis{gap:9px}.payroll-page .payroll-kpi-card{min-height:112px;padding:13px}.payroll-page .payroll-kpi-card>strong{font-size:21px}.payroll-breakdown{padding:0 12px}.payroll-breakdown>div{align-items:flex-start;flex-direction:column;gap:5px;padding:11px 2px}.payroll-breakdown>div+div{margin-left:12px;padding-left:14px}.payroll-page>.records{padding:13px;border-radius:16px}}
 @media(max-width:370px){.payroll-page .payroll-kpis{grid-template-columns:minmax(0,1fr)}.payroll-page .payroll-kpi-card{min-height:100px}}
+/* Contra entry: make account liquidity and transfer history the primary focus. */
+.contra-workspace{gap:16px}
+.contra-overview{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,.55fr);align-items:center;gap:20px;padding:22px 24px;border:1px solid color-mix(in srgb,var(--cm-violet) 16%,var(--cm-border));border-radius:20px;background:radial-gradient(ellipse at 100% 0%,color-mix(in srgb,var(--cm-violet-soft) 72%,transparent),transparent 42%),var(--cm-surface);box-shadow:0 8px 28px #17152d0c}
+.contra-overview-copy{display:flex;align-items:center;gap:15px;min-width:0}
+.contra-overview-icon{display:grid;place-items:center;flex:0 0 48px;width:48px;height:48px;border:1px solid color-mix(in srgb,var(--cm-violet) 15%,var(--cm-border));border-radius:15px;color:var(--cm-violet);background:var(--cm-violet-soft)}
+.contra-overview-copy>div{min-width:0}
+.contra-overview-copy h2{margin:4px 0 2px;color:var(--cm-text);font-size:17px;letter-spacing:-.025em}
+.contra-overview-copy p{margin:0;color:var(--cm-muted);font-size:11px}
+.contra-overview-balance{display:grid;justify-items:end;gap:3px;padding-left:20px;border-left:1px solid var(--cm-border)}
+.contra-overview-balance span{color:var(--cm-muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em}
+.contra-overview-balance strong{color:var(--cm-violet);font-size:clamp(22px,2.4vw,30px);font-weight:800;letter-spacing:-.045em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.contra-account-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,245px),1fr));gap:13px}
+.contra-account{gap:13px;padding:19px;border:1px solid var(--cm-border);border-radius:17px;background:var(--cm-surface);box-shadow:0 5px 20px #17152d08;transition:transform .18s,border-color .18s,box-shadow .18s}
+.contra-account:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--cm-violet) 35%,var(--cm-border));box-shadow:0 12px 26px #17152d10}
+.contra-account-top{justify-content:space-between}
+.contra-account-top>svg{color:var(--cm-violet);opacity:.75}
+.contra-account-method{padding:5px 9px;border-radius:8px;color:var(--cm-violet);background:var(--cm-violet-soft);font-size:9px;letter-spacing:.03em}
+.contra-account>strong{color:var(--cm-text);font-size:clamp(21px,2.1vw,27px);font-weight:800;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.contra-account-bottom{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;padding-top:10px;border-top:1px solid var(--cm-border)}
+.contra-account-bottom .contra-account-name{text-align:left;color:var(--cm-text);font-size:11px;font-weight:700}
+.contra-account-bottom small{font-size:9px;white-space:nowrap}
+.contra-register{border:1px solid var(--cm-border);border-radius:19px;background:var(--cm-surface);box-shadow:0 6px 22px #17152d08}
+.contra-register-head{align-items:center;padding:19px 22px 16px}
+.contra-register-head h3{color:var(--cm-text);font-size:17px;letter-spacing:-.025em}
+.contra-register-filters .field>span{font-size:9px;font-weight:700}
+.contra-register-filters input{min-height:39px;border-radius:10px}
+.contra-register table{min-width:800px}
+.contra-register thead th{background:var(--cm-surface-2)}
+.contra-register tbody tr:hover td{background:var(--cm-hover)}
+@media(max-width:760px){.contra-overview{grid-template-columns:minmax(0,1fr);gap:14px;padding:16px}.contra-overview-copy{align-items:flex-start}.contra-overview-icon{flex-basis:42px;width:42px;height:42px}.contra-overview-copy h2{font-size:15px}.contra-overview-balance{justify-items:start;padding:12px 0 0;border-left:0;border-top:1px solid var(--cm-border)}.contra-account-grid{grid-template-columns:minmax(0,1fr)}.contra-account{padding:16px}.contra-register-head{gap:13px;padding:16px}.contra-register-filters{min-width:0;width:100%;grid-template-columns:repeat(2,minmax(0,1fr))}.contra-mobile-list{gap:10px;padding:12px}.contra-mobile-list article{border-color:var(--cm-border);background:var(--cm-surface-2)}}
+
+/* Keep modal geometry steady while controlled inputs update on each keystroke. */
+dialog[open]{position:fixed;inset:0;margin:auto;transform:none;}
+.dialog-body{flex:1 1 auto;min-height:0;overflow-x:hidden;overflow-y:scroll;overscroll-behavior:contain;scrollbar-gutter:stable;}
+@media(max-width:760px){dialog[open]{inset:0;margin:0;width:100%;height:100svh;max-height:100svh;transform:none;animation:none!important;}.dialog-body{overflow-y:auto;scrollbar-gutter:stable;}}
+
+.dynamic-button{will-change:width,transform;white-space:normal!important;overflow-wrap:anywhere;line-height:1.3;}
+.dynamic-button-content{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:.375rem;min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere;}
+.dynamic-button-icon{position:relative;display:inline-grid;place-items:center;width:15px;height:15px;flex:none;overflow:hidden;}
+.dynamic-button-text{position:relative;display:inline-grid;min-width:0;max-width:100%;overflow:visible;vertical-align:middle;}
+.dynamic-button-text>span{grid-area:1/1;max-width:100%;white-space:inherit;overflow-wrap:inherit;}
+.dynamic-button-measure{position:absolute;top:0;left:0;display:inline-flex;align-items:center;gap:.375rem;visibility:hidden;pointer-events:none;white-space:nowrap;}

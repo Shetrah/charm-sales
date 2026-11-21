@@ -13,6 +13,7 @@ import { cents, decimal, lineTotal } from './lib/money';
 import {
   documentExtension, formatBytes, openPrivateFile, prepareDocument, uploadPrivate, validateDocument,
 } from './lib/documents';
+import { DynamicButton } from './DynamicButton';
 
 export type OrderDocument = {
   id:number;order_id:number;kind:'contract'|'supporting'|'amendment';storage_path:string;file_name:string;
@@ -57,7 +58,7 @@ export function ContractSummary({row,onOpen}:{row:Row;onOpen?:(documentId?:numbe
    <span className="contract-summary-title"><Status value={status}/>{Number(row.contract_version??0)>0&&<em>{t('versionLabel')} {row.contract_version}</em>}</span>
    {count>0?<small>{row.contract_file_name||t('noContractFile')} · {count} {t(count===1?'documentFile':'documentFiles')}{Number(row.contract_page_count??0)>0?` · ${row.contract_page_count} ${t(Number(row.contract_page_count)===1?'documentPage':'documentPages')}`:''}</small>:<small>{t('noContract')}</small>}
   </div>
-  {onOpen&&<button type="button" className="text-button contract-open" onClick={()=>onOpen()}>{t('viewContract')}</button>}
+  {onOpen&&<DynamicButton type="button" className="text-button contract-open" onClick={()=>onOpen()}>{t('viewContract')}</DynamicButton>}
  </div>;
 }
 
@@ -75,24 +76,24 @@ export function ContractPreview({orderId,scope,initialId,onClose,order}:{orderId
    <div className="doc-preview-head">
     <div className="doc-preview-title"><strong>{document?.file_name}</strong><small>{document?`${mimeLabel(document.mime_type)} · ${formatBytes(document.size_bytes)}${document.page_count?` · ${document.page_count} ${t(document.page_count===1?'documentPage':'documentPages')}`:''} · ${stamp(document.uploaded_at,language)}`:''}</small></div>
     <div className="doc-preview-tools">
-     <button type="button" className="icon-button" aria-label={t('previousDocument')} disabled={(docs.data?.length??0)<2} onClick={()=>move(-1)}><ChevronLeft size={18}/></button>
+     <DynamicButton type="button" className="icon-button" aria-label={t('previousDocument')} disabled={(docs.data?.length??0)<2} onClick={()=>move(-1)}><ChevronLeft size={18}/></DynamicButton>
      <span>{index+1} {t('of')} {docs.data?.length}</span>
-     <button type="button" className="icon-button" aria-label={t('nextDocument')} disabled={(docs.data?.length??0)<2} onClick={()=>move(1)}><ChevronRight size={18}/></button>
+     <DynamicButton type="button" className="icon-button" aria-label={t('nextDocument')} disabled={(docs.data?.length??0)<2} onClick={()=>move(1)}><ChevronRight size={18}/></DynamicButton>
     </div>
    </div>
-   {document?.mime_type.startsWith('image/')&&<div className="doc-zoom"><button type="button" className="icon-button" aria-label={t('zoomOut')} onClick={()=>setZoom(value=>Math.max(.5,Math.round((value-.25)*100)/100))}><ZoomOut size={18}/></button><button type="button" className="text-button" onClick={()=>setZoom(1)}>{t('resetZoom')}</button><button type="button" className="icon-button" aria-label={t('zoomIn')} onClick={()=>setZoom(value=>Math.min(3,Math.round((value+.25)*100)/100))}><ZoomIn size={18}/></button></div>}
+   {document?.mime_type.startsWith('image/')&&<div className="doc-zoom"><DynamicButton type="button" className="icon-button" aria-label={t('zoomOut')} onClick={()=>setZoom(value=>Math.max(.5,Math.round((value-.25)*100)/100))}><ZoomOut size={18}/></DynamicButton><DynamicButton type="button" className="text-button" onClick={()=>setZoom(1)}>{t('resetZoom')}</DynamicButton><DynamicButton type="button" className="icon-button" aria-label={t('zoomIn')} onClick={()=>setZoom(value=>Math.min(3,Math.round((value+.25)*100)/100))}><ZoomIn size={18}/></DynamicButton></div>}
    {!!error&&<ErrorNotice error={error}/>}
    <div className="doc-viewer">
     {!url?<Loading/>:document?.mime_type==='application/pdf'?<iframe className="doc-iframe" src={url} title={document.file_name}/>:<div className="doc-image-scroll"><img src={url} alt={document?.file_name??t('contract')} style={{transform:`scale(${zoom})`}}/></div>}
    </div>
    <div className="doc-preview-actions">
-    <button type="button" onClick={()=>document&&window.open(url||undefined,'_blank','noopener,noreferrer')} disabled={!url}><ExternalLink size={16}/>{t('openInNewTab')}</button>
-    <button type="button" onClick={()=>void download()} disabled={downloading||!url}><Download size={16}/>{t('downloadFile')}</button>
+    <DynamicButton type="button" onClick={()=>document&&window.open(url||undefined,'_blank','noopener,noreferrer')} disabled={!url}><ExternalLink size={16}/>{t('openInNewTab')}</DynamicButton>
+    <DynamicButton type="button" onClick={()=>void download()} disabled={downloading||!url}><Download size={16}/>{t('downloadFile')}</DynamicButton>
    </div>
    <p className="doc-private-hint"><ShieldCheck size={14}/>{t('documentViewerHint')}</p>
   </>}
   {!!versions.data?.length&&<section className="contract-history"><h3><History size={17}/>{t('contractHistory')}</h3>{versions.data.map(version=><details key={version.id} className="version-row"><summary><strong>{t('versionLabel')} {version.version}</strong><Status value={version.status}/><span>{stamp(version.submitted_at,language)}</span><small>{version.documents?.length??0} {t((version.documents?.length??0)===1?'documentFile':'documentFiles')}</small></summary><dl className="contract-meta"><div><dt>{t('contractReference')}</dt><dd>{version.reference}</dd></div><div><dt>{t('contractSignedBy')}</dt><dd>{version.signed_by}</dd></div><div><dt>{t('customerType')}</dt><dd>{t(version.customer_type==='wholesaler'?'orderTypeWholesaler':'orderTypeRetailer')}</dd></div>{version.amendment_reason&&<div><dt>{t('amendmentReason')}</dt><dd>{version.amendment_reason}</dd></div>}</dl><p className="contract-terms-read">{version.terms}</p></details>)}</section>}
-  <div className="dialog-actions"><button type="button" onClick={onClose}>{t('close')}</button></div>
+  <div className="dialog-actions"><DynamicButton type="button" onClick={onClose}>{t('close')}</DynamicButton></div>
  </Dialog>;
 }
 
@@ -119,25 +120,25 @@ export function OrderContractPanel({row,scope,profile,onPreview,onEdit,onSaved}:
    <div><dt>{t('receiptStatus')}</dt><dd><Status value={row.receipt_status==='received'?'received':'receiptPending'}/></dd></div>
   </dl>
   {row.contract_terms&&<details className="contract-terms"><summary>{t('contractTerms')}</summary><p>{row.contract_terms}</p></details>}
-  <div className="contract-document-head"><h4>{t('contractDocuments')}</h4><button type="button" className="text-button" onClick={()=>onPreview()} disabled={!row.contract_file_count}><FileText size={15}/>{t('viewContract')}</button></div>
-  {docs.isPending?<Loading/>:docs.isError?<ErrorNotice error={docs.error}/>:!docs.data?.length?<p className="muted-line">{t('noDocuments')}</p>:<div className="document-list">{docs.data.map(item=><article key={item.id} className="document-row"><span className="document-icon"><FileText size={18}/></span><div><strong>{item.file_name}</strong><small>{item.kind==='contract'?t('documentContract'):t('documentSupporting')} · {mimeLabel(item.mime_type)} · {formatBytes(item.size_bytes)}{item.page_count?` · ${item.page_count} ${t(item.page_count===1?'documentPage':'documentPages')}`:''}</small></div><button type="button" className="text-button" onClick={()=>onPreview(item.id)}>{t('viewContract')}</button></article>)}</div>}
+  <div className="contract-document-head"><h4>{t('contractDocuments')}</h4><DynamicButton type="button" className="text-button" onClick={()=>onPreview()} disabled={!row.contract_file_count}><FileText size={15}/>{t('viewContract')}</DynamicButton></div>
+  {docs.isPending?<Loading/>:docs.isError?<ErrorNotice error={docs.error}/>:!docs.data?.length?<p className="muted-line">{t('noDocuments')}</p>:<div className="document-list">{docs.data.map(item=><article key={item.id} className="document-row"><span className="document-icon"><FileText size={18}/></span><div><strong>{item.file_name}</strong><small>{item.kind==='contract'?t('documentContract'):t('documentSupporting')} · {mimeLabel(item.mime_type)} · {formatBytes(item.size_bytes)}{item.page_count?` · ${item.page_count} ${t(item.page_count===1?'documentPage':'documentPages')}`:''}</small></div><DynamicButton type="button" className="text-button" onClick={()=>onPreview(item.id)}>{t('viewContract')}</DynamicButton></article>)}</div>}
   {!!versions.data?.length&&<details className="contract-history"><summary><History size={16}/>{t('contractHistory')} ({versions.data.length})</summary>{versions.data.map(version=><article key={version.id} className="version-line"><strong>{t('versionLabel')} {version.version}</strong><Status value={version.status}/><span>{stamp(version.submitted_at,language)}</span>{version.amendment_reason&&<small>{version.amendment_reason}</small>}</article>)}</details>}
   {row.receipt_notes&&<p className="notice">{t('receiptNotes')}: {row.receipt_notes}</p>}
   {!!error&&<ErrorNotice error={error}/>}
   {action==='amend'&&<div className="contract-action-box">
    <p>{t('amendmentReasonHint')}</p>
    <Field label="amendmentReason"><textarea required minLength={5} maxLength={1000} value={reason} onChange={event=>setReason(event.target.value)}/></Field>
-   <div className="row-actions"><button type="button" onClick={()=>setAction(null)} disabled={busy}>{t('cancel')}</button><button type="button" className="primary" disabled={busy||reason.trim().length<5} onClick={()=>void run(()=>rpc('amend_order_contract',{p_id:row.id,p_reason:reason.trim()}),'amendmentRequested')}>{t('requestAmendment')}</button></div>
+   <div className="row-actions"><DynamicButton type="button" onClick={()=>setAction(null)} disabled={busy}>{t('cancel')}</DynamicButton><DynamicButton type="button" className="primary" disabled={busy||reason.trim().length<5} onClick={()=>void run(()=>rpc('amend_order_contract',{p_id:row.id,p_reason:reason.trim()}),'amendmentRequested')}>{t('requestAmendment')}</DynamicButton></div>
   </div>}
   {action==='receive'&&<div className="contract-action-box">
    <p>{t('confirmReceiptHint')}</p>
    <Field label="receiptNotes"><textarea maxLength={2000} value={notes} onChange={event=>setNotes(event.target.value)}/></Field>
-   <div className="row-actions"><button type="button" onClick={()=>setAction(null)} disabled={busy}>{t('cancel')}</button><button type="button" className="primary" disabled={busy} onClick={()=>void run(()=>rpc('confirm_order_receipt',{p_id:row.id,p_notes:notes.trim()||null}),'orderReceived')}>{t('confirmReceiptAction')}</button></div>
+   <div className="row-actions"><DynamicButton type="button" onClick={()=>setAction(null)} disabled={busy}>{t('cancel')}</DynamicButton><DynamicButton type="button" className="primary" disabled={busy} onClick={()=>void run(()=>rpc('confirm_order_receipt',{p_id:row.id,p_notes:notes.trim()||null}),'orderReceived')}>{t('confirmReceiptAction')}</DynamicButton></div>
   </div>}
   <div className="contract-panel-actions">
-   {draftEditable&&onEdit&&<button type="button" className="primary" onClick={onEdit}><PenLine size={16}/>{t('contractDetails')}</button>}
-   {canAmend&&action==null&&<button type="button" onClick={()=>setAction('amend')}><PenLine size={16}/>{t('requestAmendment')}</button>}
-   {canReceive&&action==null&&<button type="button" className="primary" onClick={()=>setAction('receive')}><PackageCheck size={16}/>{t('confirmReceipt')}</button>}
+   {draftEditable&&onEdit&&<DynamicButton type="button" className="primary" onClick={onEdit}><PenLine size={16}/>{t('contractDetails')}</DynamicButton>}
+   {canAmend&&action==null&&<DynamicButton type="button" onClick={()=>setAction('amend')}><PenLine size={16}/>{t('requestAmendment')}</DynamicButton>}
+   {canReceive&&action==null&&<DynamicButton type="button" className="primary" onClick={()=>setAction('receive')}><PackageCheck size={16}/>{t('confirmReceipt')}</DynamicButton>}
    {row.status==='pending'&&status==='submitted'&&<p className="doc-private-hint"><Lock size={14}/>{t('contractLockedHint')}</p>}
   </div>
  </section>;
@@ -147,7 +148,7 @@ export function OrderReviewContract({row,scope,onPreview}:{row:Row;scope:string;
  const {t}=usePreferences();const docs=useOrderDocuments(Number(row.id),scope);
  return <section className="contract-review-summary">
   <ContractSummary row={row} onOpen={onPreview}/>
-  {docs.isPending?<Loading/>:docs.isError?<ErrorNotice error={docs.error}/>:<div className="review-document-list">{docs.data?.filter(item=>item.kind==='contract').map(item=><button type="button" key={item.id} className="review-document" onClick={()=>onPreview(item.id)}><FileText size={17}/><span>{item.file_name}</span><small>{formatBytes(item.size_bytes)}{item.page_count?` · ${item.page_count} ${t('documentPages')}`:''}</small></button>)}</div>}
+  {docs.isPending?<Loading/>:docs.isError?<ErrorNotice error={docs.error}/>:<div className="review-document-list">{docs.data?.filter(item=>item.kind==='contract').map(item=><DynamicButton type="button" key={item.id} className="review-document" onClick={()=>onPreview(item.id)}><FileText size={17}/><span>{item.file_name}</span><small>{formatBytes(item.size_bytes)}{item.page_count?` · ${item.page_count} ${t('documentPages')}`:''}</small></DynamicButton>)}</div>}
  </section>;
 }
 
@@ -158,13 +159,13 @@ function ProductPicker({products,value,disabled,label,searchLabel,priceLabel,who
  const visible=products.filter(product=>[product.sku,product.category,product.capacity,product.fragrance,product.barcode].some(part=>String(part??'').toLocaleLowerCase().includes(query)));
  const productName=(product:Row)=>[product.category,product.capacity,product.fragrance].filter(Boolean).join(' · ');
  return <div className="order-product-picker">
-  <button type="button" className="order-product-trigger" disabled={disabled} aria-expanded={open} onClick={()=>setOpen(current=>!current)}>
+  <DynamicButton type="button" className="order-product-trigger" disabled={disabled} aria-expanded={open} onClick={()=>setOpen(current=>!current)}>
    <span className="order-product-icon"><Package size={19}/></span><span className="order-product-trigger-copy"><strong>{selected?productName(selected):label}</strong><small>{selected?`${selected.sku||`#${selected.product_id}`} · ${priceLabel}: ${selectedPrice||'—'}`:label}</small></span><ChevronDown size={17}/>
-  </button>
+  </DynamicButton>
   {open&&<div className="order-product-menu"><label className="order-product-search"><Search size={16}/><input autoFocus value={search} onChange={event=>setSearch(event.target.value)} placeholder={searchLabel}/><span>{visible.length}</span></label>
-   <div className="order-product-options">{visible.length?visible.map(product=><button type="button" key={String(product.product_id)} className={`order-product-option ${String(product.product_id)===value?'selected':''}`} onClick={()=>{onChange(String(product.product_id));setOpen(false);setSearch('');}}>
+   <div className="order-product-options">{visible.length?visible.map(product=><DynamicButton type="button" key={String(product.product_id)} className={`order-product-option ${String(product.product_id)===value?'selected':''}`} onClick={()=>{onChange(String(product.product_id));setOpen(false);setSearch('');}}>
     <span className="order-product-avatar"><Package size={17}/></span><span className="order-product-option-copy"><strong>{productName(product)}</strong><small>{product.sku||`#${product.product_id}`}{product.barcode?` · ${product.barcode}`:''}</small></span><span className="order-product-prices"><strong>{priceLabel}: {Number(product.retail_bottle??0).toLocaleString()}</strong><small>{wholesaleLabel}: {Number(product.wholesale_bottle??0).toLocaleString()}</small></span>
-   </button>):<p className="order-product-empty">{emptyLabel}</p>}</div>
+   </DynamicButton>):<p className="order-product-empty">{emptyLabel}</p>}</div>
   </div>}
  </div>;
 }
@@ -231,9 +232,9 @@ export function OrderEditor({scope,profile,row,onClose,onSaved}:{scope:string;pr
      <Field label="product_id"><ProductPicker products={priceBook.data??[]} value={line.product_id} disabled={!editable} label={t("productSearch")} searchLabel={t("search")} priceLabel={t("price")} wholesaleLabel={t("wholesalePrice")} emptyLabel={t("noProductsFound")} selectedPrice={bookedPrice(line.product_id,customerType,line.unit)} onChange={value=>setLines(current=>current.map((item,itemIndex)=>itemIndex===index?{...item,product_id:value,unit_price:item.auto?bookedPrice(value,customerType,item.unit):item.unit_price}:item))}/></Field>
      <div className="form-grid">{(['quantity','unit','unit_price'] as const).map(key=><Field key={key} label={key}>{key==='unit'?<select disabled={!editable} value={line[key]} onChange={event=>{const next=event.target.value;setLines(current=>current.map((item,itemIndex)=>itemIndex===index?{...item,unit:next,unit_price:item.auto?bookedPrice(item.product_id,customerType,next):item.unit_price}:item));}}><option value="bottle">{t('bottle')}</option><option value="carton">{t('cartonUnit')}</option></select>:<input required disabled={!editable} type="number" min={key==='quantity'?1:.01} max={key==='quantity'?100000:999999999999} step={key==='quantity'?1:.01} value={line[key]} onChange={event=>setLines(current=>current.map((item,itemIndex)=>itemIndex===index?{...item,[key]:event.target.value,auto:key==='unit_price'?false:item.auto}:item))}/>}</Field>)}</div>
      {line.auto&&!!line.unit_price&&<small className="muted-line">{t('priceBookApplied')}</small>}
-     {lines.length>1&&<button type="button" className="text-button" disabled={!editable} onClick={()=>setLines(current=>current.filter((_,itemIndex)=>itemIndex!==index))}>{t('remove')}</button>}
+     {lines.length>1&&<DynamicButton type="button" className="text-button" disabled={!editable} onClick={()=>setLines(current=>current.filter((_,itemIndex)=>itemIndex!==index))}>{t('remove')}</DynamicButton>}
     </div>)}
-    <button type="button" disabled={!editable||lines.length>=100} onClick={()=>setLines(current=>[...current,{product_id:'',quantity:'1',unit:'bottle',unit_price:'',auto:true}])}>{t('addLine')}</button>
+    <DynamicButton type="button" disabled={!editable||lines.length>=100} onClick={()=>setLines(current=>[...current,{product_id:'',quantity:'1',unit:'bottle',unit_price:'',auto:true}])}>{t('addLine')}</DynamicButton>
     <p className="muted-line">{t('priceBookOverrideHint')}</p>
     <p className="order-total">{t('total')}: {total}</p>
    </section>
@@ -250,24 +251,24 @@ export function OrderEditor({scope,profile,row,onClose,onSaved}:{scope:string;pr
      <Field label="addContractDocument"><input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" disabled={busy} onChange={event=>{addFiles(event.target.files,'contract');event.target.value='';}}/></Field>
     </div>}
     <small className="muted-line">{t('cameraHint')}</small>
-    {!!pending.length&&<div className="pending-uploads">{pending.map(item=><article key={item.id} className={`pending-upload ${item.stage}`}><div><strong>{item.file.name}</strong><small>{item.stage==='preparing'?t('documentCompressing'):item.stage==='saving'?t('documentSaving'):item.stage==='error'?t('documentFailed'):t('documentUploading')}</small></div>{item.stage==='error'?<button type="button" onClick={()=>void processUpload(item)}>{t('retryUpload')}</button>:<div className="upload-progress"><span style={{width:`${item.stage==='saving'?100:item.progress}%`}}/></div>}{!!item.error&&<ErrorNotice error={item.error}/>}</article>)}</div>}
-    <div className="document-list">{contractDocs.map(item=><article key={item.id} className="document-row"><span className="document-icon"><FileText size={18}/></span><div><strong>{item.file_name}</strong><small>{t('documentContract')} · {mimeLabel(item.mime_type)} · {formatBytes(item.size_bytes)}{item.page_count?` · ${item.page_count} ${t('documentPages')}`:''}</small></div><button type="button" className="text-button" onClick={()=>{setPreviewId(item.id);setPreviewOpen(true);}}>{t('viewContract')}</button>{editable&&(removeId===item.id?<><button type="button" className="text-button danger" disabled={busy} onClick={()=>void removeDocument(item.id)}>{t('removeDocument')}</button><button type="button" className="text-button" onClick={()=>setRemoveId(null)}>{t('cancel')}</button></>:<button type="button" className="text-button" disabled={busy} onClick={()=>setRemoveId(item.id)}><Trash2 size={14}/>{t('removeDocument')}</button>)}</article>)}</div>
-    {!!supportingDocs.length&&<><h4>{t('supportingDocuments')}</h4><div className="document-list">{supportingDocs.map(item=><article key={item.id} className="document-row"><span className="document-icon"><FileText size={18}/></span><div><strong>{item.file_name}</strong><small>{t('documentSupporting')} · {mimeLabel(item.mime_type)} · {formatBytes(item.size_bytes)}</small></div><button type="button" className="text-button" onClick={()=>{setPreviewId(item.id);setPreviewOpen(true);}}>{t('details')}</button>{editable&&(removeId===item.id?<button type="button" className="text-button danger" disabled={busy} onClick={()=>void removeDocument(item.id)}>{t('removeDocument')}</button>:<button type="button" className="text-button" disabled={busy} onClick={()=>setRemoveId(item.id)}><Trash2 size={14}/>{t('removeDocument')}</button>)}</article>)}</div></>}
+    {!!pending.length&&<div className="pending-uploads">{pending.map(item=><article key={item.id} className={`pending-upload ${item.stage}`}><div><strong>{item.file.name}</strong><small>{item.stage==='preparing'?t('documentCompressing'):item.stage==='saving'?t('documentSaving'):item.stage==='error'?t('documentFailed'):t('documentUploading')}</small></div>{item.stage==='error'?<DynamicButton type="button" onClick={()=>void processUpload(item)}>{t('retryUpload')}</DynamicButton>:<div className="upload-progress"><span style={{width:`${item.stage==='saving'?100:item.progress}%`}}/></div>}{!!item.error&&<ErrorNotice error={item.error}/>}</article>)}</div>}
+    <div className="document-list">{contractDocs.map(item=><article key={item.id} className="document-row"><span className="document-icon"><FileText size={18}/></span><div><strong>{item.file_name}</strong><small>{t('documentContract')} · {mimeLabel(item.mime_type)} · {formatBytes(item.size_bytes)}{item.page_count?` · ${item.page_count} ${t('documentPages')}`:''}</small></div><DynamicButton type="button" className="text-button" onClick={()=>{setPreviewId(item.id);setPreviewOpen(true);}}>{t('viewContract')}</DynamicButton>{editable&&(removeId===item.id?<><DynamicButton type="button" className="text-button danger" disabled={busy} onClick={()=>void removeDocument(item.id)}>{t('removeDocument')}</DynamicButton><DynamicButton type="button" className="text-button" onClick={()=>setRemoveId(null)}>{t('cancel')}</DynamicButton></>:<DynamicButton type="button" className="text-button" disabled={busy} onClick={()=>setRemoveId(item.id)}><Trash2 size={14}/>{t('removeDocument')}</DynamicButton>)}</article>)}</div>
+    {!!supportingDocs.length&&<><h4>{t('supportingDocuments')}</h4><div className="document-list">{supportingDocs.map(item=><article key={item.id} className="document-row"><span className="document-icon"><FileText size={18}/></span><div><strong>{item.file_name}</strong><small>{t('documentSupporting')} · {mimeLabel(item.mime_type)} · {formatBytes(item.size_bytes)}</small></div><DynamicButton type="button" className="text-button" onClick={()=>{setPreviewId(item.id);setPreviewOpen(true);}}>{t('details')}</DynamicButton>{editable&&(removeId===item.id?<DynamicButton type="button" className="text-button danger" disabled={busy} onClick={()=>void removeDocument(item.id)}>{t('removeDocument')}</DynamicButton>:<DynamicButton type="button" className="text-button" disabled={busy} onClick={()=>setRemoveId(item.id)}><Trash2 size={14}/>{t('removeDocument')}</DynamicButton>)}</article>)}</div></>}
    </section>
    </>}{false&&reviewOpen&&<section className="order-step-section contract-review-section"><h3><span>4</span>{t('orderStepReview')}</h3>
     {!!missing.length&&<div className="notice error" role="alert"><strong>{t('missingBeforeSubmit')}</strong><ul>{missing.map(key=><li key={key}>{t(key)}</li>)}</ul></div>}
     <dl className="contract-meta"><div><dt>{t('client_id')}</dt><dd>{client.data?.name??`#${clientId}`}</dd></div><div><dt>{t('customerType')}</dt><dd>{t(customerType==='wholesaler'?'orderTypeWholesaler':'orderTypeRetailer')}</dd></div><div><dt>{t('contractReference')}</dt><dd>{reference||'—'}</dd></div><div><dt>{t('contractSignedBy')}</dt><dd>{signedBy||'—'}</dd></div><div><dt>{t('documentFiles')}</dt><dd>{contractDocs.length}</dd></div></dl>
     <p className="contract-terms-read">{terms||'—'}</p>
     <label className="check-line"><input type="checkbox" checked={confirmed} onChange={event=>setConfirmed(event.target.checked)}/>{t('confirmContractSubmission')}</label>
-    <div className="row-actions"><button type="button" onClick={()=>setReviewOpen(false)} disabled={busy}>{t('cancel')}</button><button type="button" className="primary" disabled={busy||missing.length>0||!confirmed} onClick={()=>void submitContract()}>{busy?t('saving'):t('confirmSubmitContractAction')}</button></div>
+    <div className="row-actions"><DynamicButton type="button" onClick={()=>setReviewOpen(false)} disabled={busy}>{t('cancel')}</DynamicButton><DynamicButton type="button" className="primary" disabled={busy||missing.length>0||!confirmed} onClick={()=>void submitContract()}>{busy?t('saving'):t('confirmSubmitContractAction')}</DynamicButton></div>
    </section>}
    {!!error&&<ErrorNotice error={error}/>}{!!notice&&<div className="notice" role="status">{notice}</div>}
    {!!versions.data?.length&&contractSubmitted&&<p className="doc-private-hint"><History size={14}/>{t('versionLabel')} {versions.data[0]?.version} · {t('contractSubmittedNotice')}</p>}
    <div className="dialog-actions">
-    <button type="button" onClick={onClose} disabled={busy}>{t('close')}</button>
-    {editable&&<button type="button" disabled={busy} onClick={()=>void saveDraft()}>{t(busy?'saving':draftId?'saveDraftChanges':'saveDraft')}</button>}
+    <DynamicButton type="button" onClick={onClose} disabled={busy}>{t('close')}</DynamicButton>
+    {editable&&<DynamicButton type="button" disabled={busy} onClick={()=>void saveDraft()}>{t(busy?'saving':draftId?'saveDraftChanges':'saveDraft')}</DynamicButton>}
     
-    {(editable||contractSubmitted)&&orderStatus==='draft'&&<button type="button" className="primary" disabled={busy} onClick={()=>void submitOrder()}><Check size={16}/>{t('submitOrder')}</button>}
+    {(editable||contractSubmitted)&&orderStatus==='draft'&&<DynamicButton type="button" className="primary" disabled={busy} onClick={()=>void submitOrder()}><Check size={16}/>{t('submitOrder')}</DynamicButton>}
    </div>
   </form>
   {previewOpen&&draftId&&<ContractPreview orderId={draftId} scope={scope} initialId={previewId} onClose={()=>setPreviewOpen(false)}/>}

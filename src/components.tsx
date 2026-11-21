@@ -4,13 +4,14 @@ import { Moon, Sun, Languages, X, LoaderCircle, Eye, EyeOff } from 'lucide-react
 import type { InputHTMLAttributes } from 'react';
 import { usePreferences, translatedError } from './i18n';
 import { lookup, type Row } from './lib/data';
+import { DynamicButton } from './DynamicButton';
 export function useDebounce(value:string){const [debounced,set]=useState(value);useEffect(()=>{const timer=setTimeout(()=>set(value),300);return ()=>clearTimeout(timer);},[value]);return debounced;}
-export function Preferences(){const {t,language,theme,toggleTheme,toggleLanguage}=usePreferences();return <div className="preferences"><button type="button" className="icon-button" aria-label={t(theme==='dark'?'light':'dark')} onClick={toggleTheme}>{theme==='dark'?<Sun size={18}/>:<Moon size={18}/>}</button><button type="button" className="language" aria-label={language==='en'?'English / 简体中文':'简体中文 / English'} onClick={toggleLanguage}><Languages size={17}/> {language==='en'?'English / 简体中文':'简体中文 / English'}</button></div>;}
+export function Preferences(){const {t,language,theme,toggleTheme,toggleLanguage}=usePreferences();return <div className="preferences"><DynamicButton type="button" className="icon-button" aria-label={t(theme==='dark'?'light':'dark')} onClick={toggleTheme}>{theme==='dark'?<Sun size={18}/>:<Moon size={18}/>}</DynamicButton><DynamicButton type="button" className="language" aria-label={language==='en'?'English / 简体中文':'简体中文 / English'} onClick={toggleLanguage}><Languages size={17}/> {language==='en'?'English / 简体中文':'简体中文 / English'}</DynamicButton></div>;}
 export function Loading(){const {t}=usePreferences();return <div className="state" role="status"><LoaderCircle className="spin"/>{t('loading')}</div>;}
-export function ErrorNotice({error,retry}:{error:unknown;retry?:()=>void}){const {t}=usePreferences();return <div className="notice error" role="alert">{translatedError(error,t)}{retry&&<button onClick={retry}>{t('retry')}</button>}</div>;}
+export function ErrorNotice({error,retry}:{error:unknown;retry?:()=>void}){const {t}=usePreferences();return <div className="notice error" role="alert">{translatedError(error,t)}{retry&&<DynamicButton onClick={retry}>{t('retry')}</DynamicButton>}</div>;}
 export function Dialog({title,children,onClose,className}:{title:string;children:ReactNode;onClose:()=>void;className?:string}){
  const {t}=usePreferences();const titleId=useId();const ref=useRef<HTMLDialogElement>(null);useEffect(()=>{const old=document.activeElement as HTMLElement;const overflow=document.body.style.overflow;document.body.style.overflow='hidden';const el=ref.current;el?.showModal();return()=>{document.body.style.overflow=overflow;el?.close();old?.focus();};},[]);
- return <dialog ref={ref} className={className} aria-labelledby={titleId} onCancel={onClose} onKeyDown={e=>{if(e.key==='Escape')onClose();}}><div className="dialog-head"><h2 id={titleId}>{title}</h2><button type="button" className="icon-button" onClick={onClose} aria-label={t('close')}><X/></button></div><div className="dialog-body">{children}</div></dialog>;
+ return <dialog ref={ref} className={className} aria-labelledby={titleId} onCancel={onClose} onKeyDown={e=>{if(e.key==='Escape')onClose();}}><div className="dialog-head"><h2 id={titleId}>{title}</h2><DynamicButton type="button" className="icon-button" onClick={onClose} aria-label={t('close')}><X/></DynamicButton></div><div className="dialog-body">{children}</div></dialog>;
 }
 export function Field({label,children}:{label:string;children:ReactNode}){
  const {t}=usePreferences();const id=useId();
@@ -19,7 +20,7 @@ export function Field({label,children}:{label:string;children:ReactNode}){
 }
 export function PasswordField({label,...props}:{label:string}&Omit<InputHTMLAttributes<HTMLInputElement>,'type'>){
  const {t}=usePreferences();const id=useId();const [visible,setVisible]=useState(false);
- return <div className="field"><label htmlFor={id}>{t(label)}</label><div className="password-entry"><input {...props} id={id} type={visible?'text':'password'}/><button type="button" className="password-visibility" aria-label={t(visible?'hidePassword':'showPassword')} aria-pressed={visible} onClick={()=>setVisible(value=>!value)}>{visible?<EyeOff size={17}/>:<Eye size={17}/>}</button></div></div>;
+ return <div className="field"><label htmlFor={id}>{t(label)}</label><div className="password-entry"><input {...props} id={id} type={visible?'text':'password'}/><DynamicButton type="button" className="password-visibility" aria-label={t(visible?'hidePassword':'showPassword')} aria-pressed={visible} onClick={()=>setVisible(value=>!value)}>{visible?<EyeOff size={17}/>:<Eye size={17}/>}</DynamicButton></div></div>;
 }
 export function Lookup({kind,value,onChange,scope,label,required=true}:{kind:string;value:string;onChange:(value:string)=>void;scope:string;label:string;required?:boolean}){
  const {t}=usePreferences();const inputId=useId();const [search,setSearch]=useState('');const debounced=useDebounce(search);

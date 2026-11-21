@@ -4,6 +4,7 @@ import { Camera, ImageOff, Trash2 } from 'lucide-react';
 import { usePreferences } from './i18n';
 import { ErrorNotice } from './components';
 import { attachMedia, clearMedia, useMediaUrl, type MediaKind } from './lib/media';
+import { DynamicButton } from './DynamicButton';
 
 const IMAGE_ACCEPT = 'image/jpeg,image/png,image/webp';
 
@@ -43,7 +44,7 @@ export function MediaUpload({kind, id, path, label, removeLabel, onSaved}:{kind:
    <Camera size={15}/><span>{busy&&progress?`${t('uploading')} ${progress}%`:t(busy?'saving':label)}</span>
    <input type="file" accept={IMAGE_ACCEPT} aria-label={t(label)} hidden disabled={busy} onChange={event=>{void pick(event.target.files?.[0]);event.target.value='';}}/>
   </label>
-  {!!path&&<button type="button" className="text-button" disabled={busy} onClick={()=>void remove()}><Trash2 size={15}/>{t(removeLabel)}</button>}
+  {!!path&&<DynamicButton type="button" className="text-button" disabled={busy} onClick={()=>void remove()}><Trash2 size={15}/>{t(removeLabel)}</DynamicButton>}
   {!!error&&<ErrorNotice error={error}/>}
  </div>;
 }

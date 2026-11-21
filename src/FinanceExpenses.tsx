@@ -9,6 +9,7 @@ import { nairobiDate, type Profile, type Row } from './lib/data';
 import { formatBusinessDate } from './lib/dates';
 import { cents, decimal } from './lib/money';
 import { downloadCsv, downloadPdf, financeRpc as rpc, register, type FinanceFilters } from './lib/financePortal';
+import { DynamicButton } from './DynamicButton';
 
 const registerColumns=['expense_number','reference','expense_on','description','category_name','department_name','classification','payment_status','amount','paid','outstanding','payment_method','account_name','recipient','owner_name','source_type','status'];
 const headerLabels:Record<string,string>={description:'expenseDescription',recipient:'expensePaidTo',account_name:'expensePaidFrom',payment_method:'paymentMethod'};
@@ -57,10 +58,10 @@ export default function FinanceExpenses({scope,profile,meta,filters,onFilter,onO
  const bars=(rows:Row[],label:(row:Row)=>string)=>rows.length===0?<p>{t('empty')}</p>:<div className="finance-category-bars">{rows.map(row=>{const max=Math.max(1,...rows.map(x=>Number(x.amount)));return <div key={label(row)}><span>{label(row)}</span><strong>{formatMoney(row.amount,language)}</strong><div className="bar-track"><div style={{width:`${Number(row.amount)/max*100}%`}}/></div></div>;})}</div>;
  return <section className="expense-workspace">
   <div className="expense-actionbar"><div className="row-actions expense-actions-premium">
-   <button className="primary" onClick={()=>setDialog({kind:'expense'})}><Plus size={18}/>{t('recordExpense')}</button>
-   <button onClick={onRecordOperatingExpense}><Wallet size={17}/>{t('recordOtherOperatingExpense')}</button>
+   <DynamicButton className="primary" onClick={()=>setDialog({kind:'expense'})}><Plus size={18}/>{t('recordExpense')}</DynamicButton>
+   <DynamicButton onClick={onRecordOperatingExpense}><Wallet size={17}/>{t('recordOtherOperatingExpense')}</DynamicButton>
    <Link className="button-link" to="/finance/purchases"><span aria-hidden="true">↗</span>{t('openRawMaterialPurchases')}</Link>
-   <button onClick={()=>setDialog({kind:'lists'})}><ListTree size={17}/>{t('manageExpenseLists')}</button>
+   <DynamicButton onClick={()=>setDialog({kind:'lists'})}><ListTree size={17}/>{t('manageExpenseLists')}</DynamicButton>
   </div></div>
   <div className="notice expense-classification-hint">{t('expenseRegisterScopeHint')}</div>
   {notice&&<div className="notice" role="status">{t(notice)}</div>}
@@ -105,23 +106,23 @@ export default function FinanceExpenses({scope,profile,meta,filters,onFilter,onO
    </div>
   </>}
   {drafts.length>0&&<section className="card expense-drafts"><div className="toolbar"><h2>{t('expenseDrafts')}</h2><span>{t('expenseDraftsHint')}</span></div>
-   <div className="expense-draft-grid">{drafts.map(row=><article className="card" key={String(row.id)}><div><strong>{row.expense_number??`#${row.id}`}</strong><span className={`badge ${row.status}`}>{t(String(row.status))}</span></div><p>{row.purpose}</p><small>{formatBusinessDate(row.expense_on,language)} · {row.category_name}</small><strong>{formatMoney(row.amount,language)}</strong><div className="row-actions"><button onClick={()=>setDialog({kind:'expense',id:Number(row.id)})}>{t('continueDraft')}</button><button onClick={()=>onOpen(Number(row.id))}>{t('details')}</button></div></article>)}</div>
+   <div className="expense-draft-grid">{drafts.map(row=><article className="card" key={String(row.id)}><div><strong>{row.expense_number??`#${row.id}`}</strong><span className={`badge ${row.status}`}>{t(String(row.status))}</span></div><p>{row.purpose}</p><small>{formatBusinessDate(row.expense_on,language)} · {row.category_name}</small><strong>{formatMoney(row.amount,language)}</strong><div className="row-actions"><DynamicButton onClick={()=>setDialog({kind:'expense',id:Number(row.id)})}>{t('continueDraft')}</DynamicButton><DynamicButton onClick={()=>onOpen(Number(row.id))}>{t('details')}</DynamicButton></div></article>)}</div>
   </section>}
   <section className="card records expense-register">
    <div className="toolbar"><h2>{t('expenseRegister')}</h2><span>{t('expenseRegisterHint')}</span>
-    <button disabled={exporting||listed.isPending} onClick={()=>void exportData()}><Download size={16}/> CSV</button>
-    <button disabled={exporting||listed.isPending} onClick={()=>void exportData(true)}><Download size={16}/> PDF</button>
+    <DynamicButton disabled={exporting||listed.isPending} onClick={()=>void exportData()}><Download size={16}/> CSV</DynamicButton>
+    <DynamicButton disabled={exporting||listed.isPending} onClick={()=>void exportData(true)}><Download size={16}/> PDF</DynamicButton>
    </div>
    {!!error&&<ErrorNotice error={error}/ >}
    {listed.isPending?<Loading/>:listed.isError?<ErrorNotice error={listed.error} retry={()=>listed.refetch()}/>:listed.data.rows.length===0?<div className="state"><Wallet size={32}/><h3>{t('empty')}</h3><p>{t('expenseRegisterEmpty')}</p></div>:<>
-    <div className="table-wrap expense-register-table"><table><thead><tr>{['line_id','expense_on','classification','direction','amount','reference','account_name'].map(key=><th key={key}>{t(key==='line_id'?'id':key==='expense_on'?'occurred_at':key==='classification'?'kind':key==='reference'?'reference':key)}</th>)}<th>{t('actions')}</th></tr></thead><tbody>{listed.data.rows.map(row=><tr key={String(row.line_id)}><td>{String(row.line_id??row.request_id)}</td><td>{formatBusinessDate(row.expense_on,language)}</td><td>{cell('classification',row)}</td><td>{t('out')}</td><td>{formatMoney(row.amount??'0',language)}</td><td>{row.reference||'—'}</td><td>{row.account_name||'—'}</td><td><button className="expense-register-view" onClick={()=>onOpen(Number(row.request_id))}>{t('details')}</button></td></tr>)}</tbody></table></div>
+    <div className="table-wrap expense-register-table"><table><thead><tr>{['line_id','expense_on','classification','direction','amount','reference','account_name'].map(key=><th key={key}>{t(key==='line_id'?'id':key==='expense_on'?'occurred_at':key==='classification'?'kind':key==='reference'?'reference':key)}</th>)}<th>{t('actions')}</th></tr></thead><tbody>{listed.data.rows.map(row=><tr key={String(row.line_id)}><td>{String(row.line_id??row.request_id)}</td><td>{formatBusinessDate(row.expense_on,language)}</td><td>{cell('classification',row)}</td><td>{t('out')}</td><td>{formatMoney(row.amount??'0',language)}</td><td>{row.reference||'—'}</td><td>{row.account_name||'—'}</td><td><DynamicButton className="expense-register-view" onClick={()=>onOpen(Number(row.request_id))}>{t('details')}</DynamicButton></td></tr>)}</tbody></table></div>
     <div className="expense-register-cards">{listed.data.rows.map(row=><article className="expense-register-card" key={String(row.line_id)}>
      <header className="expense-register-card-head"><div className="expense-register-title"><span>{row.expense_number??`#${String(row.request_id)}`}<i>·</i>{cell('expense_on',row)}</span><h3>{row.description||t('expenseDescription')}</h3>{row.reference&&<small>{t('reference')}: {row.reference}</small>}</div><div className="expense-register-badges">{cell('classification',row)}{cell('payment_status',row)}</div></header>
      <div className="expense-register-amounts">{moneyFields.map(key=><div className={key==='outstanding'&&Number(row[key])>0?'is-outstanding':''} key={key}><span>{t(key)}</span><strong>{cell(key,row)}</strong></div>)}</div>
      <dl className="expense-register-details">{['category_name','department_name','recipient','account_name','payment_method','owner_name','source_type','status'].map(key=><div key={key}><dt>{t(headerLabels[key]??key)}</dt><dd>{cell(key,row)}</dd></div>)}</dl>
-     <footer className="expense-register-card-foot"><span>{t('expenseRegister')} · #{String(row.line_id)}</span><button onClick={()=>onOpen(Number(row.request_id))}>{t('details')}<span aria-hidden="true">↗</span></button></footer>
+     <footer className="expense-register-card-foot"><span>{t('expenseRegister')} · #{String(row.line_id)}</span><DynamicButton onClick={()=>onOpen(Number(row.request_id))}>{t('details')}<span aria-hidden="true">↗</span></DynamicButton></footer>
     </article>)}</div>
-    <div className="pagination"><span>{listed.data.total} · {t('page')} {page}</span><button disabled={page===1} onClick={()=>setPage(page-1)}>{t('previous')}</button><button disabled={page*100>=listed.data.total} onClick={()=>setPage(page+1)}>{t('next')}</button></div>
+    <div className="pagination"><span>{listed.data.total} · {t('page')} {page}</span><DynamicButton disabled={page===1} onClick={()=>setPage(page-1)}>{t('previous')}</DynamicButton><DynamicButton disabled={page*100>=listed.data.total} onClick={()=>setPage(page+1)}>{t('next')}</DynamicButton></div>
    </>}
   </section>
   {dialog?.kind==='expense'&&<ExpenseForm scope={scope} profile={profile} meta={meta} id={dialog.id} onClose={()=>setDialog(null)} onSaved={refresh}/>}
@@ -183,18 +184,18 @@ function ExpenseForm({scope,profile,meta,id,onClose,onSaved}:{scope:string;profi
     <Field label="discount"><input inputMode="decimal" pattern={moneyPattern} value={String(line.discount)} onChange={e=>change(index,'discount',e.target.value)}/></Field>
     <Field label="tax"><input inputMode="decimal" pattern={moneyPattern} value={String(line.tax)} onChange={e=>change(index,'tax',e.target.value)}/></Field>
     <div className="expense-line-total"><span>{t('expenseLineTotal')}</span><strong>{formatMoney(previewTotal(line),language)}</strong></div>
-    {lines.length>1&&<button type="button" className="text-button" onClick={()=>setLines(lines.filter((_,i)=>i!==index))}>{t('removeLine')}</button>}
+    {lines.length>1&&<DynamicButton type="button" className="text-button" onClick={()=>setLines(lines.filter((_,i)=>i!==index))}>{t('removeLine')}</DynamicButton>}
    </div>)}
-   <div className="row-actions"><button type="button" disabled={lines.length>=50} onClick={()=>setLines([...lines,{description:'',quantity:'1',unit_price:'',discount:'',tax:''}])}><Plus size={15}/>{t('addExpenseLine')}</button></div>
+   <div className="row-actions"><DynamicButton type="button" disabled={lines.length>=50} onClick={()=>setLines([...lines,{description:'',quantity:'1',unit_price:'',discount:'',tax:''}])}><Plus size={15}/>{t('addExpenseLine')}</DynamicButton></div>
    <div className="expense-line-total grand"><span>{t('expenseTotal')}</span><strong>{formatMoney(decimal(total),language)}</strong></div>
    <Field label="relatedOrder"><Lookup kind="orders" scope={scope} label="relatedOrder" value={String(head.order??'')} onChange={value=>set('order',value)} required={false}/></Field>
    <p className="notice">{t('expenseFormHint')}</p>
    <p className="chart-note">{t('expenseDateHint')}</p>
    {!!error&&<ErrorNotice error={error}/ >}
    <div className="dialog-actions">
-    <button type="button" disabled={busy} onClick={onClose}>{t('cancel')}</button>
-    <button type="button" disabled={busy} onClick={()=>void save(false)}>{t('saveExpenseDraft')}</button>
-    <button className="primary" disabled={busy||(!!id&&detail.isError)}>{t(busy?'saving':'submitExpense')}</button>
+    <DynamicButton type="button" disabled={busy} onClick={onClose}>{t('cancel')}</DynamicButton>
+    <DynamicButton type="button" disabled={busy} onClick={()=>void save(false)}>{t('saveExpenseDraft')}</DynamicButton>
+    <DynamicButton className="primary" disabled={busy||(!!id&&detail.isError)}>{t(busy?'saving':'submitExpense')}</DynamicButton>
    </div>
   </form>}
  </Dialog>;
@@ -211,15 +212,15 @@ function ExpenseLists({onClose,onSaved}:{onClose:()=>void;onSaved:()=>void}){
    <p className="chart-note">{t('manageExpenseListsHint')}</p>
    {([['category','categories'],['department','departments']] as const).map(([kind,listKey])=><section className="expense-list-group" key={kind}>
     <h3>{t(kind==='category'?'expenseCategory':'department')}</h3>
-    <div className="expense-list-items">{(lists.data[listKey]??[]).map((row:Row)=><div key={String(row.id)}><span className={row.active?'':'retired'}>{row.name}</span><button disabled={busy} onClick={()=>void call(kind,{id:Number(row.id),active:!row.active})}>{t(row.active?'retire':'reinstate')}</button></div>)}</div>
+    <div className="expense-list-items">{(lists.data[listKey]??[]).map((row:Row)=><div key={String(row.id)}><span className={row.active?'':'retired'}>{row.name}</span><DynamicButton disabled={busy} onClick={()=>void call(kind,{id:Number(row.id),active:!row.active})}>{t(row.active?'retire':'reinstate')}</DynamicButton></div>)}</div>
     <form noValidate onSubmit={e=>{e.preventDefault();const name=String(names[kind]??'').trim();if(!name){setError(new Error('invalid'));return;}void call(kind,{name});}}>
      <Field label={kind==='category'?'newCategory':'newDepartment'}><input maxLength={120} value={String(names[kind]??'')} onChange={e=>setNames({...names,[kind]:e.target.value})}/></Field>
-     <button className="primary" disabled={busy}>{t('add')}</button>
+     <DynamicButton className="primary" disabled={busy}>{t('add')}</DynamicButton>
     </form>
    </section>)}
   </>}
   {!!error&&<ErrorNotice error={error}/ >}
-  <div className="dialog-actions"><button className="primary" onClick={onSaved}>{t('done')}</button></div>
+  <div className="dialog-actions"><DynamicButton className="primary" onClick={onSaved}>{t('done')}</DynamicButton></div>
  </Dialog>;
 }
 

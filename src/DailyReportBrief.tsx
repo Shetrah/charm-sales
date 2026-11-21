@@ -4,6 +4,7 @@ import { ErrorNotice, Loading } from './components';
 import { usePreferences } from './i18n';
 import { supabase } from './lib/supabase';
 import type { Row } from './lib/data';
+import { DynamicButton } from './DynamicButton';
 
 export default function DailyReportBrief({scope,date,visits}:{scope:string;date:string;visits:Row[]}){
  const {t,language}=usePreferences();const [summary,setSummary]=useState('');const [source,setSource]=useState('ai');const [busy,setBusy]=useState(false);const [error,setError]=useState<unknown>();
@@ -14,7 +15,7 @@ export default function DailyReportBrief({scope,date,visits}:{scope:string;date:
  const followUps=visits.filter(visit=>String(visit.next_action??'').trim());
  const opportunities=[...new Set(visits.map(visit=>String(visit.sales_opportunities??'').trim()).filter(Boolean))];
  return <section className="card ai-daily-report">
-  <header className="daily-report-header"><div className="daily-report-heading"><span className="daily-report-kicker"><Sparkles size={14}/>{source==='deterministic'?t('deterministicNarrative'):t('aiDailyReport')}</span><h2>{t('dailyFieldReport')}</h2><p>{t('preparedFromVisitReports')}</p></div><div className="daily-report-controls"><span className="daily-report-date"><CalendarDays size={15}/>{date}</span><button type="button" className="daily-report-refresh" disabled={busy} onClick={()=>void generate(true)}><RefreshCw size={15} className={busy?'is-spinning':''}/>{busy?t('preparingSummary'):t('regenerate')}</button></div></header>
+  <header className="daily-report-header"><div className="daily-report-heading"><span className="daily-report-kicker"><Sparkles size={14}/>{source==='deterministic'?t('deterministicNarrative'):t('aiDailyReport')}</span><h2>{t('dailyFieldReport')}</h2><p>{t('preparedFromVisitReports')}</p></div><div className="daily-report-controls"><span className="daily-report-date"><CalendarDays size={15}/>{date}</span><DynamicButton type="button" className="daily-report-refresh" disabled={busy} onClick={()=>void generate(true)}><RefreshCw size={15} className={busy?'is-spinning':''}/>{busy?t('preparingSummary'):t('regenerate')}</DynamicButton></div></header>
   <div className="daily-report-metrics">
    <article className="daily-report-metric metric-visits"><span className="daily-report-metric-icon"><ClipboardList size={17}/></span><span className="daily-report-metric-label">{t('submittedVisits')}</span><strong>{visits.length}</strong><small>{t('completedReports')}</small></article>
    <article className="daily-report-metric"><span className="daily-report-metric-icon"><CheckCheck size={17}/></span><span className="daily-report-metric-label">{t('visitOutcomesLabel')}</span><strong>{Object.keys(outcomeCounts).length}</strong><small>{Object.entries(outcomeCounts).map(([name,count])=>`${count} ${t(name)}`).join(' · ')}</small></article>

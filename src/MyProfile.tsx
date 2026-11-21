@@ -7,6 +7,7 @@ import { MediaUpload } from './MediaUpload';
 import { ErrorNotice, Field, PasswordField } from './components';
 import { rpc, supabase } from './lib/supabase';
 import { usePreferences } from './i18n';
+import { DynamicButton } from './DynamicButton';
 
 const workspaceByRole: Record<Profile['role'], string> = {
  admin: 'workspaceManagement',
@@ -47,7 +48,7 @@ export function MyProfile({profile,scope}:{profile:Profile;scope:string}) {
     <div className="profile-photo-row"><StaffAvatar name={name||profile.name} path={profile.photo_path} className="profile-photo-preview" label={name||profile.name}/><div className="profile-photo-copy"><strong>{t('profilePhoto')}</strong><span>{t('staffPhotoHint')}</span></div><div className="profile-photo-action"><MediaUpload kind="staff" id={profile.id} path={profile.photo_path} label="uploadStaffPhoto" removeLabel="removeStaffPhoto" onSaved={refresh}/></div></div>
     <form className="profile-form" onSubmit={async e=>{e.preventDefault();setBusy(true);setError(undefined);setSaved(false);try{await rpc('update_own_profile',{p_name:name,p_phone:phone||null,p_territory:territory||null});setSaved(true);await qc.invalidateQueries({queryKey:[scope,'profile']});}catch(err){setError(err);}finally{setBusy(false);}}}>
      <div className="profile-form-grid"><Field label="name"><input required maxLength={200} value={name} onChange={e=>setName(e.target.value)}/></Field><Field label="email"><input value={profile.email} disabled readOnly/></Field><Field label="phone"><input type="tel" maxLength={40} value={phone} onChange={e=>setPhone(e.target.value)}/></Field><Field label="territory"><input maxLength={200} value={territory} onChange={e=>setTerritory(e.target.value)}/></Field></div>
-     {error!==undefined&&error!==null&&<ErrorNotice error={error}/ >}{saved&&<div className="notice" role="status">{t('profileSaved')}</div>}<div className="profile-form-footer"><span><ShieldCheck size={15}/>{t('profilePrivacy')}</span><button className="primary" disabled={busy}>{t(busy?'saving':'save')}<ArrowUpRight size={16}/></button></div>
+     {error!==undefined&&error!==null&&<ErrorNotice error={error}/ >}{saved&&<div className="notice" role="status">{t('profileSaved')}</div>}<div className="profile-form-footer"><span><ShieldCheck size={15}/>{t('profilePrivacy')}</span><DynamicButton className="primary" disabled={busy}>{t(busy?'saving':'save')}<ArrowUpRight size={16}/></DynamicButton></div>
     </form>
    </section>
 
@@ -61,11 +62,11 @@ export function MyProfile({profile,scope}:{profile:Profile;scope:string}) {
       <PasswordField label="newPassword" required minLength={6} autoComplete="new-password" value={newPassword} onChange={e=>setNewPassword(e.target.value)}/>
       <PasswordField label="confirmNewPassword" required minLength={6} autoComplete="new-password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)}/>
       {passwordError!==undefined&&passwordError!==null&&<ErrorNotice error={passwordError}/ >}{passwordSaved&&<div className="notice" role="status">{t('passwordChanged')}</div>}
-      <button className="primary profile-password-submit" disabled={busy}>{t(busy?'saving':'changePassword')}<ArrowUpRight size={15}/></button>
+      <DynamicButton className="primary profile-password-submit" disabled={busy}>{t(busy?'saving':'changePassword')}<ArrowUpRight size={15}/></DynamicButton>
      </form>
      <div className="profile-preference-actions">
-     <button type="button" className="profile-pref-row" onClick={toggleLanguage}><span className="profile-pref-icon teal"><Globe2 size={16}/></span><span><strong>{t('languageLabel')}</strong><small>{language==='en'?'English':'简体中文'}</small></span><span className="profile-pref-value"><Languages size={14}/>{language==='en'?'中文':'English'}</span></button>
-     <button type="button" className="profile-pref-row" onClick={toggleTheme}><span className="profile-pref-icon">{theme==='dark'?<Sun size={16}/>:<Moon size={16}/>}</span><span><strong>{t('themeLabel')}</strong><small>{t(theme==='dark'?'darkMode':'lightMode')}</small></span><span className="profile-pref-value">{t(theme==='dark'?'lightMode':'darkMode')}</span></button>
+     <DynamicButton type="button" className="profile-pref-row" onClick={toggleLanguage}><span className="profile-pref-icon teal"><Globe2 size={16}/></span><span><strong>{t('languageLabel')}</strong><small>{language==='en'?'English':'简体中文'}</small></span><span className="profile-pref-value"><Languages size={14}/>{language==='en'?'中文':'English'}</span></DynamicButton>
+     <DynamicButton type="button" className="profile-pref-row" onClick={toggleTheme}><span className="profile-pref-icon">{theme==='dark'?<Sun size={16}/>:<Moon size={16}/>}</span><span><strong>{t('themeLabel')}</strong><small>{t(theme==='dark'?'darkMode':'lightMode')}</small></span><span className="profile-pref-value">{t(theme==='dark'?'lightMode':'darkMode')}</span></DynamicButton>
      </div>
     </section>
     <div className="profile-note"><span className="profile-note-icon"><ShieldCheck size={18}/></span><div><strong>{t('profilePrivacy')}</strong><p>{t('profilePrivacyHint')}</p></div></div>

@@ -7,6 +7,7 @@ import { formatMoney } from './lib/presentation';
 import { rpc, supabase } from './lib/supabase';
 import { usePreferences } from './i18n';
 import { Dialog, ErrorNotice, Field, Loading } from './components';
+import { DynamicButton } from './DynamicButton';
 
 const LOGO = '/assets/charm-logo.png';
 type Kind = 'invoice' | 'delivery';
@@ -197,13 +198,13 @@ export function OrderDocumentViewer({scope,orderId,initial='invoice',onClose}:{s
  return <Dialog className="doc-dialog" title={t(kind==='invoice'?'documentInvoiceTitle':'documentDeliveryTitle')} onClose={onClose}>
   <div className="doc-toolbar">
    <div className="field-tabs doc-tabs" role="tablist" aria-label={t('documentTabs')}>
-    <button type="button" role="tab" aria-selected={kind==='invoice'} className={kind==='invoice'?'active':''} onClick={()=>setKind('invoice')}>{t('documentInvoiceTitle')}</button>
-    {hasDelivery&&<button type="button" role="tab" aria-selected={kind==='delivery'} className={kind==='delivery'?'active':''} onClick={()=>setKind('delivery')}>{t('documentDeliveryTitle')}</button>}
+    <DynamicButton type="button" role="tab" aria-selected={kind==='invoice'} className={kind==='invoice'?'active':''} onClick={()=>setKind('invoice')}>{t('documentInvoiceTitle')}</DynamicButton>
+    {hasDelivery&&<DynamicButton type="button" role="tab" aria-selected={kind==='delivery'} className={kind==='delivery'?'active':''} onClick={()=>setKind('delivery')}>{t('documentDeliveryTitle')}</DynamicButton>}
    </div>
-   <button className="primary" type="button" disabled={q.isPending||!q.data||(kind==='delivery'&&!hasDelivery)} onClick={downloadDocumentPdf}><Download size={16}/>{t('printDocument')}</button>
+   <DynamicButton className="primary" type="button" disabled={q.isPending||!q.data||(kind==='delivery'&&!hasDelivery)} onClick={downloadDocumentPdf}><Download size={16}/>{t('printDocument')}</DynamicButton>
   </div>
   {q.isPending?<Loading/>:q.isError?<ErrorNotice error={q.error} retry={()=>q.refetch()}/>:q.data&&kind==='delivery'&&!hasDelivery?<p className="notice" role="status">{t('deliveryNoteUnavailable')}</p>:q.data&&<><div className="doc-scroll"><DocumentSheet kind={kind} payload={q.data}/></div><p className="field-note doc-hint">{t(kind==='invoice'?'documentPrintHint':'deliveryDocumentHint')}</p></>}
-  <div className="dialog-actions doc-actions"><button type="button" onClick={onClose}>{t('close')}</button></div>
+  <div className="dialog-actions doc-actions"><DynamicButton type="button" onClick={onClose}>{t('close')}</DynamicButton></div>
  </Dialog>;
 }
 
@@ -228,7 +229,7 @@ export function CompanyLetterheadCard({scope,profile,onOpen}:{scope:string;profi
  const missing=COMPANY_FIELDS.filter(([key])=>!company[key]&&['address_line1','phone','email','tax_id'].includes(key)).map(([,label])=>t(label));
  const details=[company.address_line1,company.address_line2,[company.city,company.country].filter(Boolean).join(', '),company.phone,company.email,company.website].filter(Boolean);
  return <section className="card finance-config company-card">
-  <header className="company-card-head"><div><h2>{t('companyLetterhead')}</h2><p>{t('companyLetterheadHint')}</p></div><button type="button" onClick={onOpen}>{t('documentEditCompany')}</button></header>
+  <header className="company-card-head"><div><h2>{t('companyLetterhead')}</h2><p>{t('companyLetterheadHint')}</p></div><DynamicButton type="button" onClick={onOpen}>{t('documentEditCompany')}</DynamicButton></header>
   {q.isPending?<Loading/>:q.isError?<ErrorNotice error={q.error} retry={()=>q.refetch()}/>:<div className="company-identity">
    <img src={LOGO} alt=""/>
    <div><strong>{company.legal_name||'CHARM KENYA'}</strong>{company.trading_name&&<span>{company.trading_name}</span>}{details.map(line=><p key={line}>{line}</p>)}{company.tax_id&&<p>{t('documentTaxId')} · {company.tax_id}</p>}</div>
@@ -260,7 +261,7 @@ export function CompanyLetterheadDialog({scope,onClose,onSaved}:{scope:string;on
    <div className="field-form-grid">{COMPANY_FIELDS.map(([key,label,max])=><Field key={key} label={label}><input name={key} defaultValue={String(q.data?.[key]??'')} maxLength={max} required={['legal_name','city'].includes(key)}/></Field>)}</div>
    {COMPANY_TEXTS.map(([key,label])=><Field key={key} label={label}><textarea name={key} rows={2} maxLength={key==='footer_note'?300:600} defaultValue={String(q.data?.[key]??'')}/></Field>)}
    {!!error&&<ErrorNotice error={error}/>}
-   <div className="dialog-actions"><button type="button" onClick={onClose}>{t('close')}</button><button className="primary" disabled={busy}>{t(busy?'saving':'documentSaveCompany')}</button></div>
+   <div className="dialog-actions"><DynamicButton type="button" onClick={onClose}>{t('close')}</DynamicButton><DynamicButton className="primary" disabled={busy}>{t(busy?'saving':'documentSaveCompany')}</DynamicButton></div>
   </form>}
  </Dialog>;
 }

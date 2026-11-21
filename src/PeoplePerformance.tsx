@@ -12,6 +12,7 @@ import { formatMoney } from './finance';
 
 import { StaffAvatar, StaffDetail } from './Team';
 import { RecordForm } from './workflows';
+import { DynamicButton } from './DynamicButton';
 
 const TABS = ['team','attendance','leave','commissions'] as const;
 type Tab = typeof TABS[number];
@@ -152,22 +153,22 @@ export default function PeoplePerformance({scope,profile}:{scope:string;profile:
 
  return <main className="content people-page">
   <div className="page-heading staffs-page-heading"><div><span className="eyebrow">CHARM KENYA · {t('businessTimeZone')}</span><h1>{t(admin?'staffsTitle':'peopleTitle')}</h1><p>{t(admin&&tab==='team'?'staffsIntro':intro[tab])}</p></div>
-   {admin&&tab==='team'&&<button className="primary" onClick={()=>setAddStaff(true)}><UserPlus size={17}/>{t('addStaff')}</button>}
-   {tab==='leave'&&<button className="primary" onClick={()=>setLeaveEditor('new')}><Plus size={18}/>{t('requestLeave')}</button>}
-   {tab==='commissions'&&admin&&<button className="primary" onClick={()=>setRuleEditor('new')}><Plus size={18}/>{t('newCommissionRule')}</button>}
+   {admin&&tab==='team'&&<DynamicButton className="primary" onClick={()=>setAddStaff(true)}><UserPlus size={17}/>{t('addStaff')}</DynamicButton>}
+   {tab==='leave'&&<DynamicButton className="primary" onClick={()=>setLeaveEditor('new')}><Plus size={18}/>{t('requestLeave')}</DynamicButton>}
+   {tab==='commissions'&&admin&&<DynamicButton className="primary" onClick={()=>setRuleEditor('new')}><Plus size={18}/>{t('newCommissionRule')}</DynamicButton>}
   </div>
   <nav className="field-tabs" role="tablist" aria-label={t('peopleTitle')}>
-   {available.map(value=><button type="button" role="tab" aria-selected={tab===value} key={value} className={tab===value?'active':''} onClick={()=>setTab(value)}>
+   {available.map(value=><DynamicButton type="button" role="tab" aria-selected={tab===value} key={value} className={tab===value?'active':''} onClick={()=>setTab(value)}>
     {value==='team'?<Users size={16}/>:value==='attendance'?<CalendarCheck size={16}/>:value==='leave'?<CalendarDays size={16}/>:<Coins size={16}/>}
     <span>{t(value==='team'?(admin?'staffsNav':'teamPerformance'):value==='attendance'?'attendanceTab':value==='leave'?'leaveTab':'commissionsTab')}</span>
     {value==='leave'&&pendingLeave.length>0&&<em>{pendingLeave.length}</em>}
-   </button>)}
+   </DynamicButton>)}
   </nav>
   <div className="field-cards people-kpis">
-   {admin&&<button type="button" className="card field-card" onClick={()=>setTab('team')}><span className="eyebrow">{t('staffsNav')}</span><strong>{staffRows.filter(row=>row.active).length}</strong><small>{staffRows.length} {t('staff').toLowerCase()}</small><Users size={19}/></button>}
-   <button type="button" className="card field-card" onClick={()=>setTab('attendance')}><span className="eyebrow">{t('presentDays')}</span><strong>{presentTotal}/{dayTotal}</strong><small>{t('hoursPp')}: {hoursTotal.toFixed(1)}</small><CalendarCheck size={19}/></button>
-   <button type="button" className="card field-card" onClick={()=>setTab('leave')}><span className="eyebrow">{t('pendingLeave')}</span><strong>{pendingLeave.length}</strong><small>{t('leaveBalance')}</small><CalendarDays size={19}/></button>
-   <button type="button" className="card field-card" onClick={()=>setTab('commissions')}><span className="eyebrow">{t('commissionEarned')}</span><strong>{formatMoney(commissionTotals.earned ?? 0,language)}</strong><small>{t('commissionPending')}: {formatMoney(commissionTotals.pending ?? 0,language)}</small><Coins size={19}/></button>
+   {admin&&<DynamicButton type="button" className="card field-card" onClick={()=>setTab('team')}><span className="eyebrow">{t('staffsNav')}</span><strong>{staffRows.filter(row=>row.active).length}</strong><small>{staffRows.length} {t('staff').toLowerCase()}</small><Users size={19}/></DynamicButton>}
+   <DynamicButton type="button" className="card field-card" onClick={()=>setTab('attendance')}><span className="eyebrow">{t('presentDays')}</span><strong>{presentTotal}/{dayTotal}</strong><small>{t('hoursPp')}: {hoursTotal.toFixed(1)}</small><CalendarCheck size={19}/></DynamicButton>
+   <DynamicButton type="button" className="card field-card" onClick={()=>setTab('leave')}><span className="eyebrow">{t('pendingLeave')}</span><strong>{pendingLeave.length}</strong><small>{t('leaveBalance')}</small><CalendarDays size={19}/></DynamicButton>
+   <DynamicButton type="button" className="card field-card" onClick={()=>setTab('commissions')}><span className="eyebrow">{t('commissionEarned')}</span><strong>{formatMoney(commissionTotals.earned ?? 0,language)}</strong><small>{t('commissionPending')}: {formatMoney(commissionTotals.pending ?? 0,language)}</small><Coins size={19}/></DynamicButton>
   </div>
   {!!notice&&<div className="notice" role="status">{notice}</div>}
   {!!error&&<ErrorNotice error={error} retry={()=>setError(undefined)}/>}
@@ -188,7 +189,7 @@ export default function PeoplePerformance({scope,profile}:{scope:string;profile:
      <p className="staffs-profile-email">{person.email}</p><dl className="people-facts"><div><dt>{t('phone')}</dt><dd>{person.phone??t('notProvided')}</dd></div><div><dt>{t('territory')}</dt><dd>{person.territory??t('notProvided')}</dd></div></dl>
      <div className="people-metrics"><div><span>{t('periodSales')}</span><strong>{formatMoney(sales,language)}</strong></div><div><span>{t('clientsAssigned')}</span><strong>{assigned.length}</strong></div><div><span>{t('commissionEarned')}</span><strong>{formatMoney(commissionRow?.earned ?? 0,language)}</strong></div></div>
      <div className="people-lifecycle"><span>{t('clientLifecycle')}</span><div><span className="badge active">{t('active')} {lifecycle('active')}</span><span className="badge prospective">{t('prospective')} {lifecycle('prospective')}</span><span className="badge declined">{t('declined')} {lifecycle('declined')}</span></div></div>
-     <button type="button" className="primary" onClick={()=>setStaffProfile(person)}>{t('viewPerformance')}<ArrowUpRight size={16}/></button>
+     <DynamicButton type="button" className="primary" onClick={()=>setStaffProfile(person)}>{t('viewPerformance')}<ArrowUpRight size={16}/></DynamicButton>
     </article>;
    })}</div>}
   </section>}
@@ -197,16 +198,16 @@ export default function PeoplePerformance({scope,profile}:{scope:string;profile:
    <div className="card people-toolbar">
     <PerformancePeriodFilter t={t} language={language} period={performancePeriod} onPeriod={setPerformancePeriod} from={performanceFrom} to={performanceTo} onFrom={setPerformanceFrom} onTo={setPerformanceTo}/>
     {admin&&<Field label="staffFilter"><select value={attendanceFilter} onChange={event=>setAttendanceFilter(event.target.value)}><option value="">{t('allStaff')}</option>{staffRows.map(person=><option key={person.id} value={person.id}>{person.name} · {person.staff_code}</option>)}</select></Field>}
-    <button type="button" className="primary" onClick={()=>setRange(performanceRange)}>{t('applyRange')}</button>
-    <button type="button" disabled={!attendanceRows.length} onClick={()=>downloadCsv(`attendance-${range.from}-${range.to}.csv`,[t('staffCode'),t('name'),t('date'),t('attendanceStatus'),t('hoursPp'),t('visitCount')],(attendanceFilter?attendanceRows.filter(row=>String(row.salesperson_id)===attendanceFilter):attendanceRows).map(row=>[row.staff_code,row.name,row.day,row.status,row.hours,row.visit_count]))}><Download size={16}/>{t('exportAttendance')}</button>
+    <DynamicButton type="button" className="primary" onClick={()=>setRange(performanceRange)}>{t('applyRange')}</DynamicButton>
+    <DynamicButton type="button" disabled={!attendanceRows.length} onClick={()=>downloadCsv(`attendance-${range.from}-${range.to}.csv`,[t('staffCode'),t('name'),t('date'),t('attendanceStatus'),t('hoursPp'),t('visitCount')],(attendanceFilter?attendanceRows.filter(row=>String(row.salesperson_id)===attendanceFilter):attendanceRows).map(row=>[row.staff_code,row.name,row.day,row.status,row.hours,row.visit_count]))}><Download size={16}/>{t('exportAttendance')}</DynamicButton>
    </div>
    <p className="field-note">{t('attendanceScopeNote')}</p>
    {attendance.isPending?<Loading/>:attendance.isError?<ErrorNotice error={attendance.error} retry={()=>attendance.refetch()}/>:<>
-    <div className="people-summary-grid">{visibleTotals.map(row=><button type="button" className="card people-summary" key={row.salesperson_id} onClick={()=>setAttendanceStaff(row)}>
+    <div className="people-summary-grid">{visibleTotals.map(row=><DynamicButton type="button" className="card people-summary" key={row.salesperson_id} onClick={()=>setAttendanceStaff(row)}>
      <header><div><strong>{row.name}</strong><span>{row.staff_code}</span></div><span className="people-hours">{Number(row.hours ?? 0).toFixed(1)} h</span></header>
      <div className="people-summary-bars"><span><em>{t('presentDays')}</em><strong>{row.present}/{row.days}</strong></span><span><em>{t('fullDays')}</em><strong>{row.full}</strong></span><span><em>{t('partialDays')}</em><strong>{row.partial}</strong></span><span><em>{t('absentDays')}</em><strong>{row.absent}</strong></span><span><em>{t('leaveDays')}</em><strong>{row.leave}</strong></span></div>
      <div className="people-meter"><div style={{width:`${row.days?Math.min(100,Number(row.present)/Number(row.days)*100):0}%`}}/></div>
-    </button>)}</div>
+    </DynamicButton>)}</div>
     {visibleTotals.length===0&&<p className="field-empty">{t('noAttendance')}</p>}
     {admin&&<section className="card people-policy"><header><h2>{t('attendancePolicy')}</h2><ShieldCheck size={18}/></header><PolicyEditor policy={policy} busy={busy} onSave={value=>run(()=>rpc('save_attendance_policy',value),'attendancePolicySaved')}/><p className="field-note">{t('attendancePolicyHint')} {t('correctionsHint')}</p></section>}
    </>}
@@ -229,10 +230,10 @@ export default function PeoplePerformance({scope,profile}:{scope:string;profile:
        <p>{row.reason}</p>
        {row.decision_reason&&<small className="people-decision">{t('decisionReason')}: {row.decision_reason}</small>}
        <div className="people-actions">
-        {editable&&<button type="button" onClick={()=>setLeaveEditor(row)}><Pencil size={15}/>{t('editLeaveRequest')}</button>}
-        {row.status==='draft'&&<button type="button" className="primary" disabled={busy} onClick={()=>run(()=>rpc('submit_leave_request',{p_id:row.id}),'leaveSubmittedMsg')}>{t('submitLeave')}</button>}
-        {['draft','pending'].includes(row.status)&&<button type="button" disabled={busy} onClick={()=>run(()=>rpc('cancel_leave_request',{p_id:row.id}),'leaveCancelledMsg')}><X size={15}/>{t('cancelLeave')}</button>}
-        {admin&&row.status==='pending'&&row.salesperson_id!==profile.id&&<button type="button" className="primary" onClick={()=>setLeaveDecision(row)}><ShieldCheck size={15}/>{t('decision')}</button>}
+        {editable&&<DynamicButton type="button" onClick={()=>setLeaveEditor(row)}><Pencil size={15}/>{t('editLeaveRequest')}</DynamicButton>}
+        {row.status==='draft'&&<DynamicButton type="button" className="primary" disabled={busy} onClick={()=>run(()=>rpc('submit_leave_request',{p_id:row.id}),'leaveSubmittedMsg')}>{t('submitLeave')}</DynamicButton>}
+        {['draft','pending'].includes(row.status)&&<DynamicButton type="button" disabled={busy} onClick={()=>run(()=>rpc('cancel_leave_request',{p_id:row.id}),'leaveCancelledMsg')}><X size={15}/>{t('cancelLeave')}</DynamicButton>}
+        {admin&&row.status==='pending'&&row.salesperson_id!==profile.id&&<DynamicButton type="button" className="primary" onClick={()=>setLeaveDecision(row)}><ShieldCheck size={15}/>{t('decision')}</DynamicButton>}
        </div>
       </article>;
      })}</div>}
@@ -243,16 +244,16 @@ export default function PeoplePerformance({scope,profile}:{scope:string;profile:
   {tab==='commissions'&&<section className="people-section">
    <div className="card people-toolbar">
     <PerformancePeriodFilter t={t} language={language} period={performancePeriod} onPeriod={setPerformancePeriod} from={performanceFrom} to={performanceTo} onFrom={setPerformanceFrom} onTo={setPerformanceTo}/>
-    <button type="button" disabled={!commissionRows.length} onClick={()=>downloadCsv(`commissions-${performanceRange.from}-${performanceRange.to}.csv`,[t('staffCode'),t('name'),t('order_id'),t('basisLabel'),t('commissionAmount'),t('status')],commissionRows.map(row=>[row.staff_code,row.name,row.order_id,row.basis,row.commission,row.status]))}><Download size={16}/>{t('exportCommission')}</button>
+    <DynamicButton type="button" disabled={!commissionRows.length} onClick={()=>downloadCsv(`commissions-${performanceRange.from}-${performanceRange.to}.csv`,[t('staffCode'),t('name'),t('order_id'),t('basisLabel'),t('commissionAmount'),t('status')],commissionRows.map(row=>[row.staff_code,row.name,row.order_id,row.basis,row.commission,row.status]))}><Download size={16}/>{t('exportCommission')}</DynamicButton>
    </div>
    {commission.isPending?<Loading/>:commission.isError?<ErrorNotice error={commission.error} retry={()=>commission.refetch()}/>:<>
     <div className="people-money">{['earned','pending','approved','paid','reversed'].map(key=><div key={key} className={`card people-money-card ${key}`}><span>{t(key==='pending'?'commissionPending':key==='earned'?'commissionEarned':key==='approved'?'commissionApproved':key==='paid'?'commissionPaid':'commissionReversed')}</span><strong>{formatMoney(commissionTotals[key] ?? 0,language)}</strong><small>{key==='earned'?`${commissionTotals.entries ?? 0} ${t('commissionEntries').toLowerCase()}`:''}</small></div>)}</div>
     <p className="field-note">{t('commissionSummaryHint')}</p>
-    {admin&&<section className="card people-rules"><header><h2>{t('commissionRules')}</h2><button type="button" className="text-button" onClick={()=>setRuleEditor('new')}><Plus size={15}/>{t('newCommissionRule')}</button></header>
+    {admin&&<section className="card people-rules"><header><h2>{t('commissionRules')}</h2><DynamicButton type="button" className="text-button" onClick={()=>setRuleEditor('new')}><Plus size={15}/>{t('newCommissionRule')}</DynamicButton></header>
      {(rules.data ?? []).length===0?<p className="field-empty">{t('noRules')}</p>:<div className="people-rule-list">{(rules.data ?? []).map(rule=>{const ruleTiers = tiersByRule.get(String(rule.id)) ?? [];return <article className="people-rule" key={rule.id}>
       <header><div><strong>{rule.name}</strong><span>{t(basisWord[rule.basis] ?? rule.basis)} · {t(rule.method==='percentage'?'percentage':rule.method==='fixed'?'fixedAmount':'tiered')}</span></div><span className={`badge ${rule.active?'active':'declined'}`}>{t(rule.active?'ruleActive':'ruleInactive')}</span></header>
       <div className="people-rule-meta"><span>{ruleRate(rule)}</span><span>{formatBusinessDate(rule.effective_from,language)} → {rule.effective_to?formatBusinessDate(rule.effective_to,language):'—'}</span>{ruleTiers.length>0&&<span>{ruleTiers.map(item=>`${Number(item.min_amount)}–${item.max_amount==null?'∞':Number(item.max_amount)}: ${Number(item.rate)}%`).join(' · ')}</span>}</div>
-      <div className="people-actions"><button type="button" onClick={()=>setRuleEditor(rule)}><Pencil size={15}/>{t('editCommissionRule')}</button></div>
+      <div className="people-actions"><DynamicButton type="button" onClick={()=>setRuleEditor(rule)}><Pencil size={15}/>{t('editCommissionRule')}</DynamicButton></div>
      </article>;})}</div>}
      <p className="field-note">{t('commissionRuleHint')} {t('commissionRulesHint')}</p>
     </section>}
@@ -262,10 +263,10 @@ export default function PeoplePerformance({scope,profile}:{scope:string;profile:
       <div className="people-entry-meta"><span>{t('orderTotal')}: {formatMoney(entry.order_total,language)}</span><span>{t('basisLabel')}: {t(basisWord[entry.basis] ?? entry.basis)}</span><span>{t('commissionRate')}: {entry.rate==null?'—':`${Number(entry.rate)}%`}</span></div>
       <div className="people-entry-amount"><span>{t('commissionAmount')}</span><strong>{formatMoney(entry.commission,language)}</strong></div>
       {admin&&<div className="people-actions">
-       {entry.status==='earned'&&<button type="button" className="primary" disabled={busy} onClick={()=>run(()=>rpc('commission_decide',{p_entry:entry.id,p_status:'approved',p_amount:null,p_reason:''}),'commissionApproved')}>{t('approveCommission')}</button>}
-       {entry.status==='approved'&&<button type="button" className="primary" disabled={busy} onClick={()=>run(()=>rpc('commission_decide',{p_entry:entry.id,p_status:'paid',p_amount:null,p_reason:''}),'commissionPaid')}>{t('payCommission')}</button>}
-       {['earned','approved','adjusted'].includes(entry.status)&&<button type="button" onClick={()=>setCommissionAction({entry,status:'reversed'})}>{t('reverseCommission')}</button>}
-       {['earned','approved'].includes(entry.status)&&<button type="button" onClick={()=>setCommissionAction({entry,status:'adjusted'})}>{t('adjustCommission')}</button>}
+       {entry.status==='earned'&&<DynamicButton type="button" className="primary" disabled={busy} onClick={()=>run(()=>rpc('commission_decide',{p_entry:entry.id,p_status:'approved',p_amount:null,p_reason:''}),'commissionApproved')}>{t('approveCommission')}</DynamicButton>}
+       {entry.status==='approved'&&<DynamicButton type="button" className="primary" disabled={busy} onClick={()=>run(()=>rpc('commission_decide',{p_entry:entry.id,p_status:'paid',p_amount:null,p_reason:''}),'commissionPaid')}>{t('payCommission')}</DynamicButton>}
+       {['earned','approved','adjusted'].includes(entry.status)&&<DynamicButton type="button" onClick={()=>setCommissionAction({entry,status:'reversed'})}>{t('reverseCommission')}</DynamicButton>}
+       {['earned','approved'].includes(entry.status)&&<DynamicButton type="button" onClick={()=>setCommissionAction({entry,status:'adjusted'})}>{t('adjustCommission')}</DynamicButton>}
       </div>}
      </article>)}</div>}
      <p className="field-note">{t('commissionPendingHint')}</p>
@@ -288,8 +289,8 @@ function AttendanceDetail({staff,rows,admin,language,t,busy,onClose,onCorrect}:{
  const usage = rows.reduce((total,row)=>total+Number(row.visit_count ?? 0),0);
  return <Dialog title={`${t('attendanceSummary')} · ${staff.name}`} onClose={onClose}>
   <dl className="field-meta-list"><div><dt>{t('staffCode')}</dt><dd>{staff.staff_code}</dd></div><div><dt>{t('presentDays')}</dt><dd>{staff.present}/{staff.days}</dd></div><div><dt>{t('hoursPp')}</dt><dd>{Number(staff.hours ?? 0).toFixed(1)}</dd></div><div><dt>{t('visitCount')}</dt><dd>{usage}</dd></div></dl>
-  {rows.length===0?<p className="field-empty">{t('noAttendance')}</p>:<div className="people-day-list">{rows.map(row=><div className={`people-day ${row.status}`} key={row.day}><div><strong>{formatBusinessDate(row.day,language)}</strong><span>{row.visit_count} {t('visitCount').toLowerCase()} · {Number(row.hours ?? 0).toFixed(1)} h{row.corrected?` · ${t('correction')}`:''}</span>{row.note&&<small>{row.note}</small>}</div><AttendanceBadge value={row.status}/>{admin&&<button type="button" disabled={busy} onClick={()=>onCorrect(row)}>{t('correction')}</button>}</div>)}</div>}
-  <div className="dialog-actions"><button type="button" onClick={onClose}>{t('close')}</button></div>
+  {rows.length===0?<p className="field-empty">{t('noAttendance')}</p>:<div className="people-day-list">{rows.map(row=><div className={`people-day ${row.status}`} key={row.day}><div><strong>{formatBusinessDate(row.day,language)}</strong><span>{row.visit_count} {t('visitCount').toLowerCase()} · {Number(row.hours ?? 0).toFixed(1)} h{row.corrected?` · ${t('correction')}`:''}</span>{row.note&&<small>{row.note}</small>}</div><AttendanceBadge value={row.status}/>{admin&&<DynamicButton type="button" disabled={busy} onClick={()=>onCorrect(row)}>{t('correction')}</DynamicButton>}</div>)}</div>}
+  <div className="dialog-actions"><DynamicButton type="button" onClick={onClose}>{t('close')}</DynamicButton></div>
  </Dialog>;
 }
 
@@ -303,7 +304,7 @@ function AttendanceCorrection({row,onClose,onSaved}:{row:Row;onClose:()=>void;on
    <Field label="correctionReason"><input required minLength={3} maxLength={500} value={reason} onChange={event=>setReason(event.target.value)}/></Field>
    <Field label="correctionNote"><input maxLength={500} value={note} onChange={event=>setNote(event.target.value)}/></Field>
    {!!localError&&<ErrorNotice error={localError}/>}
-   <div className="dialog-actions"><button type="button" onClick={onClose}>{t('cancel')}</button><button className="primary" disabled={working||reason.trim().length<3}>{t(working?'saving':'recordAttendanceDecision')}</button></div>
+   <div className="dialog-actions"><DynamicButton type="button" onClick={onClose}>{t('cancel')}</DynamicButton><DynamicButton className="primary" disabled={working||reason.trim().length<3}>{t(working?'saving':'recordAttendanceDecision')}</DynamicButton></div>
   </form>
  </Dialog>;
 }
@@ -315,7 +316,7 @@ function PolicyEditor({policy,busy,onSave}:{policy:Row|null;busy:boolean;onSave:
  return <form className="field-form people-policy-form" noValidate onSubmit={event=>{event.preventDefault();onSave({p_full:Number(value.full),p_min:Number(value.min),p_start:value.start,p_end:value.end,p_grace:Number(value.grace),p_days:value.days});}}>
   <div className="field-form-grid"><Field label="fullDayHours"><input type="number" min="0.5" max="24" step="0.5" value={value.full} onChange={event=>setValue({...value,full:event.target.value})}/></Field><Field label="minHours"><input type="number" min="0.5" max="24" step="0.5" value={value.min} onChange={event=>setValue({...value,min:event.target.value})}/></Field><Field label="workdayStart"><input type="time" value={value.start} onChange={event=>setValue({...value,start:event.target.value})}/></Field><Field label="workdayEnd"><input type="time" value={value.end} onChange={event=>setValue({...value,end:event.target.value})}/></Field><Field label="lateGrace"><input type="number" min="0" max="240" value={value.grace} onChange={event=>setValue({...value,grace:event.target.value})}/></Field></div>
   <div className="field"><span>{t('workingDays')}</span><div className="people-weekdays">{[1,2,3,4,5,6,7].map(day=><label key={day}><input type="checkbox" checked={value.days.includes(day)} onChange={()=>toggle(day)}/>{t(`wd${day}`)}</label>)}</div></div>
-  <button className="primary" disabled={busy||value.days.length===0}>{t(busy?'saving':'savePolicy')}</button>
+  <DynamicButton className="primary" disabled={busy||value.days.length===0}>{t(busy?'saving':'savePolicy')}</DynamicButton>
  </form>;
 }
 
@@ -328,7 +329,7 @@ function LeaveEditor({profile,admin,users,types,request,busy,setBusy,error,setEr
   <div className="field-form-grid"><Field label="leaveType"><select required value={type} onChange={event=>setType(event.target.value)}><option value="">{t('choose')}</option>{types.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}</select></Field><Field label="leaveDaysLabel"><input readOnly value={`${days}`}/></Field><Field label="leaveStart"><input required type="date" value={start} onChange={event=>setStart(event.target.value)}/></Field><Field label="leaveEnd"><input required type="date" min={start} value={end} onChange={event=>setEnd(event.target.value)}/></Field></div>
   <Field label="leaveReason"><textarea required minLength={3} maxLength={2000} value={reason} onChange={event=>setReason(event.target.value)}/></Field>
   {!!localError&&<ErrorNotice error={localError}/>} {!!error&&<ErrorNotice error={error}/>}
-  <div className="dialog-actions"><button type="button" onClick={onClose}>{t('cancel')}</button><button type="button" disabled={busy||days<=0} onClick={()=>void save(false)}>{t('saveDraft')}</button><button type="button" className="primary" disabled={busy||days<=0} onClick={()=>void save(true)}>{t('submitLeave')}</button></div>
+  <div className="dialog-actions"><DynamicButton type="button" onClick={onClose}>{t('cancel')}</DynamicButton><DynamicButton type="button" disabled={busy||days<=0} onClick={()=>void save(false)}>{t('saveDraft')}</DynamicButton><DynamicButton type="button" className="primary" disabled={busy||days<=0} onClick={()=>void save(true)}>{t('submitLeave')}</DynamicButton></div>
  </form></Dialog>;
 }
 function LeaveDecision({request,onClose,onSaved,busy,error}:{request:Row;onClose:()=>void;onSaved:(message:string)=>Promise<void>;busy:boolean;error:unknown}) {
@@ -340,7 +341,7 @@ function LeaveDecision({request,onClose,onSaved,busy,error}:{request:Row;onClose
    <Field label="decision"><select value={decision} onChange={event=>setDecision(event.target.value)}><option value="approve">{t('approveLeave')}</option><option value="reject">{t('rejectLeave')}</option></select></Field>
    <Field label="decisionReason"><textarea required={decision==='reject'} minLength={3} maxLength={2000} value={reason} onChange={event=>setReason(event.target.value)}/></Field>
    {!!localError&&<ErrorNotice error={localError}/>}{!!error&&<ErrorNotice error={error}/>}
-   <div className="dialog-actions"><button type="button" onClick={onClose}>{t('cancel')}</button><button className="primary" disabled={working||busy}>{t(working||busy?'saving':decision==='approve'?'approveLeave':'rejectLeave')}</button></div>
+   <div className="dialog-actions"><DynamicButton type="button" onClick={onClose}>{t('cancel')}</DynamicButton><DynamicButton className="primary" disabled={working||busy}>{t(working||busy?'saving':decision==='approve'?'approveLeave':'rejectLeave')}</DynamicButton></div>
   </form>
  </Dialog>;
 }
@@ -367,12 +368,12 @@ function CommissionRuleEditor({rule,ruleTiers,onClose,onSaved,busy,error}:{rule:
     {value.method==='percentage'&&<Field label="ratePercent"><input type="number" min="0" max="100" step="0.001" value={value.rate} onChange={event=>setValue({...value,rate:event.target.value})}/></Field>}
     {value.method==='fixed'&&<Field label="fixedAmount"><input type="number" min="0.01" step="0.01" value={value.fixed} onChange={event=>setValue({...value,fixed:event.target.value})}/></Field>}
     <Field label="effectiveFrom"><input required type="date" value={value.from} onChange={event=>setValue({...value,from:event.target.value})}/></Field><Field label="effectiveTo"><input type="date" min={value.from} value={value.to} onChange={event=>setValue({...value,to:event.target.value})}/></Field></div>
-   {tiered(value.method)&&<section className="people-tiers"><header><h3>{t('tiers')}</h3><button type="button" className="text-button" onClick={()=>setTierRows(previous=>[...previous,{min:'',max:'',rate:''}])}><Plus size={15}/>{t('addTier')}</button></header>{tierRows.map((tier,index)=><div className="people-tier" key={index}><Field label="minAmount"><input type="number" min="0" step="0.01" value={tier.min} onChange={event=>setTierRows(previous=>previous.map((item,position)=>position===index?{...item,min:event.target.value}:item))}/></Field><Field label="maxAmount"><input type="number" min="0" step="0.01" value={tier.max} onChange={event=>setTierRows(previous=>previous.map((item,position)=>position===index?{...item,max:event.target.value}:item))}/></Field><Field label="ratePercent"><input type="number" min="0" max="100" step="0.001" value={tier.rate} onChange={event=>setTierRows(previous=>previous.map((item,position)=>position===index?{...item,rate:event.target.value}:item))}/></Field>{tierRows.length>1&&<button type="button" className="icon-button" aria-label={t('remove')} onClick={()=>setTierRows(previous=>previous.filter((_,position)=>position!==index))}><Trash2 size={16}/></button>}</div>)}</section>}
+   {tiered(value.method)&&<section className="people-tiers"><header><h3>{t('tiers')}</h3><DynamicButton type="button" className="text-button" onClick={()=>setTierRows(previous=>[...previous,{min:'',max:'',rate:''}])}><Plus size={15}/>{t('addTier')}</DynamicButton></header>{tierRows.map((tier,index)=><div className="people-tier" key={index}><Field label="minAmount"><input type="number" min="0" step="0.01" value={tier.min} onChange={event=>setTierRows(previous=>previous.map((item,position)=>position===index?{...item,min:event.target.value}:item))}/></Field><Field label="maxAmount"><input type="number" min="0" step="0.01" value={tier.max} onChange={event=>setTierRows(previous=>previous.map((item,position)=>position===index?{...item,max:event.target.value}:item))}/></Field><Field label="ratePercent"><input type="number" min="0" max="100" step="0.001" value={tier.rate} onChange={event=>setTierRows(previous=>previous.map((item,position)=>position===index?{...item,rate:event.target.value}:item))}/></Field>{tierRows.length>1&&<DynamicButton type="button" className="icon-button" aria-label={t('remove')} onClick={()=>setTierRows(previous=>previous.filter((_,position)=>position!==index))}><Trash2 size={16}/></DynamicButton>}</div>)}</section>}
    <label className="check-field"><input type="checkbox" checked={value.active} onChange={event=>setValue({...value,active:event.target.checked})}/>{t('ruleActive')}</label>
    <Field label="notes"><textarea maxLength={2000} value={value.notes} onChange={event=>setValue({...value,notes:event.target.value})}/></Field>
    <p className="field-note">{t('commissionRuleHint')}</p>
    {!!localError&&<ErrorNotice error={localError}/>}{!!error&&<ErrorNotice error={error}/>}
-   <div className="dialog-actions"><button type="button" onClick={onClose}>{t('cancel')}</button><button className="primary" disabled={working||busy}>{t(working||busy?'saving':'save')}</button></div>
+   <div className="dialog-actions"><DynamicButton type="button" onClick={onClose}>{t('cancel')}</DynamicButton><DynamicButton className="primary" disabled={working||busy}>{t(working||busy?'saving':'save')}</DynamicButton></div>
   </form>
  </Dialog>;
 }
@@ -387,7 +388,7 @@ function CommissionDecision({entry,status,onClose,onSaved,busy,error}:{entry:Row
    {amountStatus&&<Field label="adjustmentAmount"><input required type="number" min="0" step="0.01" value={value} onChange={event=>setValue(event.target.value)}/></Field>}
    <Field label="reversalReason"><textarea required minLength={3} maxLength={1000} value={reason} onChange={event=>setReason(event.target.value)}/></Field>
    {!!localError&&<ErrorNotice error={localError}/>}{!!error&&<ErrorNotice error={error}/>}
-   <div className="dialog-actions"><button type="button" onClick={onClose}>{t('cancel')}</button><button className="primary" disabled={working||busy}>{t(working||busy?'saving':amountStatus?'adjustCommission':'reverseCommission')}</button></div>
+   <div className="dialog-actions"><DynamicButton type="button" onClick={onClose}>{t('cancel')}</DynamicButton><DynamicButton className="primary" disabled={working||busy}>{t(working||busy?'saving':amountStatus?'adjustCommission':'reverseCommission')}</DynamicButton></div>
   </form>
  </Dialog>;
 }
