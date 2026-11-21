@@ -15,7 +15,7 @@ export function RecordCards({section,rows,onSelect,onContract,onDelete,onDeleteP
  const {t,language}=usePreferences();const Icon=icons[section]??FileText;
  const date=(value:string)=>formatBusinessDateTime(value,language);
  if(section==='orders')return <div className="record-cards order-record-cards">{rows.map(row=><article key={row.id} className={`record-card order-record-card order-${row.status}`}>
-  <div className="record-card-top"><span className="record-card-icon"><Receipt size={20}/></span><span className="record-reference">{t('order_id')} #{row.id}</span><Status value={row.status}/></div>
+  <div className="record-card-top"><span className="record-card-icon"><Receipt size={20}/></span><span className="record-reference">{t('order_id')} #{row.id}</span><Status value={row.status}/>{row.payment_status&&<span className={`badge payment-${row.payment_status}`}>{t(`paymentState_${row.payment_status}`)}</span>}</div>
   <h2>{row._client??`${t('client')} #${row.client_id}`}</h2>
   <div className="order-card-meta"><span>{t('salesperson_id')}<strong>{row._people?.[row.salesperson_id]??`#${row.salesperson_id}`}</strong></span><span>{t('customerType')}<strong>{t(row.customer_type==='wholesaler'?'orderTypeWholesaler':'orderTypeRetailer')}</strong></span><span>{t('due_date')}<strong>{row.due_date?formatBusinessDate(row.due_date,language):'—'}</strong></span><span>{t('confirmed_at')}<strong>{row.confirmed_at?date(row.confirmed_at):'—'}</strong></span></div>
   <div className="order-card-total"><span>{t('total')}</span><strong>{formatMoney(row.total??'0',language)}</strong></div>
