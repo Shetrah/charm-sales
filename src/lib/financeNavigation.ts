@@ -7,7 +7,7 @@ export const financePages=[
  ['cashbook','financecashbook',Wallet],['contra','financeContraEntry',ArrowLeftRight],
  ['budgets','financebudgets',CalendarDays],
  ['batch_costs','financeBatchCosts',Factory],['purchases','financePurchases',Truck],['goods_receipts','financeGoodsReceipts',FileCheck2],['invoices','financeInvoices',FileText],['supplier_invoices','financeSupplierInvoices',FileText],
- ['statements','financestatements',Wallet],['accounts','financeAccounts',SlidersHorizontal],
+ ['statements','financestatements',Wallet],['client_statements','clientStatements',FileText],['accounts','financeAccounts',SlidersHorizontal],
  ['audit','financeaudit',Users],
 ] as const;
 // Expenditure reports and operating postings now read from the consolidated register, so their bookmarks land there.
